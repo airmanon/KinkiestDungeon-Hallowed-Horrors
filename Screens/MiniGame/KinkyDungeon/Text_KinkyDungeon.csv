@@ -4,7 +4,7 @@ KinkyDungeonDeviantart,News and Updates
 KinkyDungeonPatreon,Support @ Patreon
 KinkyDungeonPatronsList0,"Thank you to the following awesome people for supporting me at patreon.com/ada18980|Alexthymia (for CN translation!)|Song (bound enemy graphics!)|cyberjoel|Samantha Lear|Kara|The-Fisher-King|selly-grim|Dex♪|Churro|Gamefan|Shogo|X27|Blox|Slacker|Nikos S.|WATA|Flame|Alexis Octavia|Finn|Dmitri S.|Noxgarm|Siegfried K.|Hellgete"
 KinkyDungeonPatronsList1,"|||nuzzles|Rest|LoudestQuietPerson|Violet EverGardner|BoopleDoopleson|Dazman1234|linlizheng|Laioken|Mechio|Vikingberserker|PWMRM|devan|LukeB|atetete|Aussie895|0xA4C1B842|Rika|Physicsphail|Loony|Jeremy P.|ItsYahboi9"
-KinkyDungeonPatronsList2,"|AlexisTheFlame|Chen Yu|Sinohisaki|nnm711|Ron lsrp|Miro|Anthony R.|John T.|Geng114514|塵狐|kamil|Iaysakuya|tsang|Somprad|Thatguu|damit damit|Victor|Hjake2|anton A.|Dakra|CuvyanTaylor|hanhan|The_rogue1"
+KinkyDungeonPatronsList2,"|AlexisTheFlame|Chen Yu|Sinohisaki|nnm711|Ron lsrp|Miro|Anthony R.|John T.|Geng114514|塵狐|kamil|Iaysakuya|tsang|Somprad|Thatguu|damit damit|Victor|Hjake2|anton A.|Dakra|CuvyanTaylor|hanhan|The_rogue1|Tatsuya S.|James K.|"
 KinkyDungeonPatronsList3,"|Misa|eddy z.|theshrimpyone"
 KinkyDungeonBack,Back
 KinkyDungeonNext,Next
@@ -20,7 +20,7 @@ KDModsLoaded,Mods Loaded.
 RestartNeeded,"Restart required!"
 RestartNeededCN,"需要重启！"
 
-KinkyDungeon,"Kinky Dungeon v3.8"
+KinkyDungeon,"Kinky Dungeon v3.81"
 Intro,"You are an adventurer descending into an ancient underground city of magic."
 Intro2,"Beneath its depths lies the Mistress' Staff, an artifact of untold power."
 Intro3,"Will you prevail against forces unknown, or succumb to its dark secrets?"
@@ -300,6 +300,11 @@ KinkyDungeonStatDescSecondWind,"Gain 2 WP every time you remove a non-trivial re
 
 KinkyDungeonStatDominant,"Dominant"
 KinkyDungeonStatDescDominant,"They're trapped here with you. Ghosts are more helpful, and you can bind enemies that confront you about bondage."
+
+KinkyDungeonStatStranger,"Stranger"
+KinkyDungeonStatDescStranger,"Randomizes your relationship to most factions."
+KinkyDungeonStatWrongNeighborhood,"Wrong Neighborhood"
+KinkyDungeonStatDescWrongNeighborhood,"All factions are hostile and united against you."
 
 KinkyDungeonStatTrespasser,"Trespasser"
 KinkyDungeonStatDescTrespasser,"You lose reputation with the goddesses every time you advance a floor."
@@ -2416,6 +2421,7 @@ KinkyDungeonShrineConjure,"Conjuration"
 KinkyDungeonShrineIllusion,"Illusions"
 KinkyDungeonShrineCommerce,"Commerce"
 KinkyDungeonShrineTooltip,"Shrine of "
+KinkyDungeonTabletTooltip,"Tablet of "
 
 KinkyDungeonShrineCursed,"Curses"
 KinkyDungeonShrineDetermination,"Willpower"
@@ -4001,7 +4007,7 @@ KinkyDungeonSpellTargetChainBolt,Choose aim direction
 
 KinkyDungeonSpellRopeBoltLaunch,Conjure Ropes
 KinkyDungeonSpellRopeBolt,Animated Rope
-KinkyDungeonSpellDescriptionRopeBoltLaunch,Launch 3 ropes that deal DamageDealt chain damage each and add 10 binding.
+KinkyDungeonSpellDescriptionRopeBoltLaunch,Launch 3 ropes that deal DamageDealt chain damage each and add 22 rope binding.
 KinkyDungeonSpellCastRopeBoltLaunch,You animate a bunch of ropes!
 KinkyDungeonSpellTargetRopeBoltLaunch,Choose aim direction
 
@@ -4343,7 +4349,7 @@ KinkyDungeonSpellCastSnare,You set an invisible trap!
 KinkyDungeonSpellTargetSnare,Select where to put the trap (it will be invisible)
 
 KinkyDungeonSpellRopeStrike,Rope Burst
-KinkyDungeonSpellDescriptionRopeStrike,An explosion of rope deals DamageDealt chain damage in a 3x3 AoE and applies 30 points of binding. Snares for Duration turns.
+KinkyDungeonSpellDescriptionRopeStrike,An explosion of rope deals DamageDealt chain damage in a 3x3 AoE and applies 40 points of rope binding. Snares for Duration turns.
 KinkyDungeonSpellCastRopeStrike,You call forth ropes from the abyss!
 KinkyDungeonSpellTargetRopeStrike,Select center of a a 3x3 AoE
 
@@ -5400,7 +5406,7 @@ KinkyDungeonCurseStruggleMistressKeyEnchantedBra,"You rub your hands along your 
 
 RestraintEnchantedHeels,Ancient Heels
 LootChestEnchantedHeels,"You find a set of glowing heels, glowing magnificently, along with a strange crystal next to it."
-RestraintEnchantedHeelsDesc2,"A pair of towering heels, enchanted with combat magic. When powered, they reduce slow level by 2, and deal 25 shadow damage on-hit with brief slow."
+RestraintEnchantedHeelsDesc2,"A pair of towering heels, enchanted with combat magic. When powered, they reduce slow level by 1, and deal 25 shadow damage on-hit with brief slow."
 RestraintEnchantedHeelsDesc,"'Shoes of the graceful'"
 KinkyDungeonCurseStruggleMistressKeyEnchantedHeels,"You can barely stand in these heels. They are rigid, metallic, and unbreakable, yet padded on the inside."
 

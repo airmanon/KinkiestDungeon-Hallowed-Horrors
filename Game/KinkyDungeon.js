@@ -222,9 +222,11 @@ let KDOptOut = false;
 * ManaSlow: number,
 * TempFlagFloorTicks: Record<string, number>,
 * KneelTurns: number,
+* HiddenSpellPages : Record<string, boolean>,
 *}} KDGameDataBase
 */
 let KDGameDataBase = {
+	HiddenSpellPages: {},
 	PriorJailbreaks: 0,
 	MapFaction: "",
 	KeysNeeded: false,
@@ -250,10 +252,10 @@ let KDGameDataBase = {
 
 	KinkyDungeonJailGuard: 0,
 	KinkyDungeonGuardTimer: 0,
-	KinkyDungeonGuardTimerMax: 22,
+	KinkyDungeonGuardTimerMax: 28,
 	KinkyDungeonGuardSpawnTimer: 0,
-	KinkyDungeonGuardSpawnTimerMax: 40,
-	KinkyDungeonGuardSpawnTimerMin: 25,
+	KinkyDungeonGuardSpawnTimerMax: 80,
+	KinkyDungeonGuardSpawnTimerMin: 50,
 	KinkyDungeonMaxPrisonReduction: 10,
 	KinkyDungeonPrisonReduction: 0,
 	KinkyDungeonPrisonExtraGhostRep: 0,
@@ -2262,7 +2264,9 @@ function KinkyDungeonLoadGame(String) {
 				KDOrigMana = KinkyDungeonStatMana*10;
 				KDOrigDistraction = KinkyDungeonStatDistraction*10;
 			}
-			if (saveData.KDGameData != undefined) KDGameData = saveData.KDGameData;
+			KDGameData = Object.assign({}, KDGameDataBase);
+			if (saveData.KDGameData != undefined) KDGameData = Object.assign({}, saveData.KDGameData);
+
 			if (saveData.statchoice != undefined) KinkyDungeonStatsChoice = new Map(saveData.statchoice);
 			if (saveData.faction != undefined) KinkyDungeonFactionRelations = saveData.faction;
 			KDInitFactions();
