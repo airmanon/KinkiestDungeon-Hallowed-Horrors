@@ -2,12 +2,13 @@
 
 let KinkyDungeonFactionColors = {
 	"Jail": ["#8A120C"],
-	"Slime": ["#9B49BD"],
+	"Slime": ["#9B49BD", "#9B49BD"],
 	"Dressmaker": ["#6B48E0", "#F8BD01"],
 	"Alchemist": ["#4c6885", "#7bef41"],
 	"Elf": ["#63ab3f", "#F8BD01"],
 	"Bountyhunter": ["#252525", "#bfbfbf"],
-	"AncientRobot": ["#444444", "#3def9c"],
+	"AncientRobot": ["#444444", "#4fa4b8"],
+	"Dollsmith": ["#444444", "#b1062a", "#ff5277"],
 	"Mushy": ["#bfbfbf", "#92c1e8"],
 	"Apprentice": ["#686f99", "#ff5277"],
 	"Witch": ["#222222", "#8359b3"],
@@ -33,15 +34,80 @@ let KinkyDungeonHiddenFactions = [
 	"Rebel",
 	"Rock",
 	"Delinquent",
+	"Wolfhunter",
 	"Chase",
+	"Mushy",
+	"Witch",
 ];
+
+
+
+let KDFactionSecurityMod = {
+	Dressmaker: {
+		level_magic: 1,
+		level_key: 1,
+	},
+	Witch: {
+		level_magic: 1,
+		level_key: 1,
+	},
+	Elemental: {
+		level_magic: 2,
+	},
+	Mushy: {
+		level_magic: 1,
+		level_tech: 0,
+	},
+	Apprentice: {
+		level_magic: 0,
+		level_key: -1,
+	},
+	Elf: {
+		level_magic: 1,
+		level_key: 1,
+	},
+	Bast: {
+		level_magic: 1,
+	},
+	AncientRobot: {
+		level_tech: 2,
+		level_key: 1,
+	},
+	Nevermere: {
+		level_tech: 1,
+		level_key: 1,
+	},
+	Maidforce: {
+		level_tech: 0,
+		level_magic: -1,
+		level_key: 1,
+	},
+	Alchemist: {
+		level_tech: 1,
+		level_magic: -1,
+	},
+	Bountyhunter: {
+		level_tech: 0,
+		level_key: 2,
+	},
+};
+
+let KDBaseSecurity = {
+	level_key: 0,
+};
+
+let KDPiousFactions = {
+	"Angel": 1.0,
+};
 
 /** Shows tooltips for these factions even though they are hidden */
 let KinkyDungeonTooltipFactions = [
 	"Rebel",
 	"Ambush",
 	"Delinquent",
+	"Wolfhunter",
 	"Rock",
+	"Rage",
 ];
 
 /** Tag for these factions, these also can have increased chances to appear on a map */
@@ -49,16 +115,16 @@ let KinkyDungeonFactionTag = {
 	Bountyhunter: "bountyhunter",
 	Bandit: "bandit",
 	Alchemist: "alchemist",
-	Nevermere: "wolfgirl",
+	Nevermere: "nevermere",
 	Apprentice: "apprentice",
 	Dressmaker: "dressmaker",
-	Witch: "witch",
+	//Witch: "witch",
 	Elemental: "elemental",
 	Dragon: "dragon",
 	Maidforce: "maid",
 	Bast: "mummy",
 	Elf: "elf",
-	Mushy: "mushy",
+	//Mushy: "mushy",
 	AncientRobot: "robot",
 };
 
@@ -76,20 +142,20 @@ let KinkyDungeonFactionRelationsBase = {
 		Beast: -0.6,
 
 		// Mainline factions
-		Bountyhunter: -0.35,
+		Bountyhunter: -0.3,
 		Bandit: -0.7,
-		Alchemist: -0.25,
+		Alchemist: -0.2,
 		Nevermere: -0.1,
 		Apprentice: 0.2,
-		Dressmaker: -0.45,
+		Dressmaker: -0.4,
 		Witch: -0.8,
 		Elemental: -0.6,
-		Dragon: 0.0,
-		Maidforce: -0.05,
+		Dragon: 0.1,
+		Maidforce: -0.1,
 		Bast: -0.6,
-		Elf: -0.26,
-		Mushy: -0.64,
-		AncientRobot: -0.45,
+		Elf: -0.3,
+		Mushy: -0.6,
+		AncientRobot: -0.4,
 
 		// Special factions
 		Angel: 0.1,
@@ -97,6 +163,7 @@ let KinkyDungeonFactionRelationsBase = {
 	},
 	"Angel": {
 		Demon: -1.0,
+		Ghost: -0.7,
 		Elemental: 0.15,
 		Dragon: 0.05,
 		AncientRobot: -0.25,
@@ -154,6 +221,11 @@ let KinkyDungeonFactionRelationsBase = {
 	"Delinquent": {
 		Player: -1,
 		Maidforce: -1,
+		Chase: -1,
+	},
+	"Wolfhunter": {
+		Player: -1,
+		Nevermere: -1,
 		Chase: -1,
 	},
 	"Trap": {
@@ -271,17 +343,16 @@ let KinkyDungeonFactionRelationsBase = {
 	},
 	"Nevermere": {
 		"Alchemist": 1.0,
-		"Elf": -1.0,
 		"Bast": -0.55,
 		"Mushy": -0.4,
 		"Bandit": 0.3,
-		"Witch": 0.15,
 		"Apprentice": 0.15,
-		"AncientRobot": -0.3,
+		"AncientRobot": -0.51,
 	},
 	"Alchemist": {
 		"Bandit": 0.15,
 		"AncientRobot": -0.55,
+		"Dressmaker": -0.25,
 	},
 	"Bountyhunter": {
 		"Jail": 0.8,
@@ -305,12 +376,11 @@ let KinkyDungeonFactionRelationsBase = {
 		"Mushy": -0.6,
 	},
 	"Elemental": {
-		"Witch": 0.4,
 		"KinkyConstruct": 0.55,
 		"Dressmaker": 0.35,
-		"Apprentice": 1.0,
+		"Witch": 0.15,
 		"Bandit": -0.15,
-		"Elf": -0.5,
+		"Elf": 0.5,
 		"Bast": -0.35,
 		"Dragon": -0.5,
 		"AncientRobot": -0.15,
@@ -330,18 +400,20 @@ let KinkyDungeonFactionRelationsBase = {
 		"Witch": -0.4,
 		"Alchemist": -0.15,
 		"Beast": -1.0,
-		"Mushy": 0.1,
+		"Mushy": 0.15,
 	},
 	"Mushy": {
+		"Alchemist": -0.55,
+		"Elemental": 0.25,
 	},
 	"Witch": {
-		"Apprentice": 0.55,
-		"Dressmaker": 0.4,
 		"Elf": -1.0,
 	},
 	"Dressmaker": {
-		"Apprentice": 1.0,
+		"Witch": 0.15,
 		"Nevermere": 0.8,
+		"Bandit": -0.5,
+		"Dragon": -0.5,
 	},
 	"Apprentice": {
 		"Jail": 1.0,
@@ -350,10 +422,7 @@ let KinkyDungeonFactionRelationsBase = {
 	"Maidforce": {
 		"Alchemist": 0.55,
 		"Jail": 0.55,
-		"Nevermere": 0.55,
 		"Dragon": 0.55,
-		"Elf": 0.55,
-		"Bast": 0.2,
 		"Apprentice": 0.55,
 		"Bandit": -0.6,
 		"Witch": -0.4,
@@ -437,18 +506,23 @@ function KDChangeFactionRelation(a, b, amount, AffectRivals) {
 	if (!KinkyDungeonFactionRelations[a]) KinkyDungeonFactionRelations[a] = KinkyDungeonFactionRelationsBase[a] || 0;
 	if (!KinkyDungeonFactionRelations[b]) KinkyDungeonFactionRelations[b] = KinkyDungeonFactionRelationsBase[b] || 0;
 
+	let amountSetTo = 0;
+	let amountSet = false;
+
 	if (KinkyDungeonFactionRelations[a]) {
 		if (!KinkyDungeonFactionRelations[a][b] && KinkyDungeonFactionRelations[b][a])
 			KinkyDungeonFactionRelations[a][b] = KinkyDungeonFactionRelations[b][a];
 		else if (!KinkyDungeonFactionRelations[a][b]) KinkyDungeonFactionRelations[a][b] = 0;
-		KinkyDungeonFactionRelations[a][b] = Math.max(-1, Math.min(1, KinkyDungeonFactionRelations[a][b] + amount));
+		amountSetTo = Math.max(-1, Math.min(1, KinkyDungeonFactionRelations[a][b] + amount));
+		KinkyDungeonFactionRelations[a][b] = amountSetTo;
+		amountSet = true;
 	}
 
 	if (KinkyDungeonFactionRelations[b]) {
 		if (!KinkyDungeonFactionRelations[b][a] && KinkyDungeonFactionRelations[a][b])
 			KinkyDungeonFactionRelations[b][a] = KinkyDungeonFactionRelations[a][b];
 		else if (!KinkyDungeonFactionRelations[b][a]) KinkyDungeonFactionRelations[b][a] = 0;
-		KinkyDungeonFactionRelations[b][a] = Math.max(-1, Math.min(1, KinkyDungeonFactionRelations[b][a] + amount));
+		KinkyDungeonFactionRelations[b][a] = amountSet ? amountSetTo : Math.max(-1, Math.min(1, KinkyDungeonFactionRelations[b][a] + amount));
 	}
 
 	if (AffectRivals && a == "Player") {

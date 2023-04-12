@@ -1,9 +1,281 @@
 "use strict";
 
+/**
+ * Updates local tiles such as conveyors
+ * @type {Record<string, (delta: number, X?: number, Y?: number) => void>}
+ */
+let KDTileUpdateFunctionsLocal = {
+	'z': (delta, X, Y) => {
+		let entity = KinkyDungeonEntityAt(X, Y);
+		if (entity) return;
+		let mapTile = KinkyDungeonTilesGet(X + "," + Y);
+		if (mapTile?.wireType == "AutoDoor_HoldOpen" || mapTile?.wireType == "AutoDoor_HoldClosed") {
+			let tags = KDEffectTileTags(X, Y);
+			if ((!tags.signal && mapTile.wireType == "AutoDoor_HoldOpen")
+				|| (tags.signal && mapTile.wireType == "AutoDoor_HoldClosed")) {
+				KinkyDungeonMapSet(X, Y, 'Z');
+			}
+		}
+	},
+	'Z': (delta, X, Y) => {
+		let mapTile = KinkyDungeonTilesGet(X + "," + Y);
+		if (mapTile?.wireType == "AutoDoor_HoldOpen" || mapTile?.wireType == "AutoDoor_HoldClosed") {
+			let tags = KDEffectTileTags(X, Y);
+			if ((tags.signal && mapTile.wireType == "AutoDoor_HoldOpen")
+				|| (!tags.signal && mapTile.wireType == "AutoDoor_HoldClosed")) {
+				KinkyDungeonMapSet(X, Y, 'z');
+			}
+		}
+	},
+	"w": (delta, X, Y) => {
+		KDCreateEffectTile(X, Y, {
+			name: "Water",
+			duration: 2,
+		}, 0);
+	},
+	"V": (delta, X, Y) => {
+		KDConveyor(delta, X, Y);
+	},
+	"N": (delta, X, Y) => {
+		let tile = KinkyDungeonTilesGet(X + "," + Y);
+		let tU = KinkyDungeonTilesGet(X + "," + (Y - 1));
+		let tD = KinkyDungeonTilesGet(X + "," + (Y + 1));
+		let tR = KinkyDungeonTilesGet((X + 1) + "," + Y);
+		let tL = KinkyDungeonTilesGet((X - 1) + "," + Y);
+
+		if (tU?.DY == 1) tile.DY = 1;
+		else if (tD?.DY == -1) tile.DY = -1;
+		else if (tL?.DX == 1) tile.DX = 1;
+		else if (tR?.DX == -1) tile.DX = -1;
+
+		let entity = KinkyDungeonEntityAt(X, Y);
+		let BMType = KDBondageMachineFunctions[tile.Binding];
+
+		if (entity) {
+			let eligible = false;
+			if (entity.player) {
+				if (!KinkyDungeonFlags.get("processed")) {
+					eligible = BMType.eligible_player(tile, X, Y, entity);
+					if (eligible) {
+						if (BMType.function_player(tile, delta, X, Y, entity)) return;
+					}
+				}
+			} else if (entity.Enemy?.bound) {
+				if (entity.Enemy.tags.prisoner) KDStaggerEnemy(entity);
+				if (!KDEnemyHasFlag(entity, "processed")) {
+					eligible = BMType.eligible_enemy(tile, X, Y, entity);
+					if (eligible) {
+						if (BMType.function_enemy(tile, delta, X, Y, entity)) return;
+					}
+				}
+			}
+		}
+
+		KDConveyor(delta, X, Y);
+	},
+	"u": (delta, X, Y) => {
+		let tile = KinkyDungeonTilesGet(X + "," + Y);
+
+		if (!tile.cd) tile.cd = 0;
+		if (tile.cd <= 0) {
+			if (tile.count == undefined || tile.count > 0) {
+				// Too many dolls!!!
+				if (KDGameData.DollCount > 30) return;
+				let nearbyEnemyCount = KDNearbyEnemies(X, Y, 4.5);
+				if (nearbyEnemyCount.length > 6) return;
+				let start = true;
+				let ind = tile.index;
+				// Loop through and cycle if needed
+				while (start || ind != tile.index) {
+					start = false;
+					let tx = ind == 0 ? -1 : (ind == 2 ? 1 : 0);
+					let ty = ind == 1 ? -1 : (ind == 3 ? 1 : 0);
+
+					// Create a doll on a conveyor if needed
+					let entity = KinkyDungeonEntityAt(X + tx, Y + ty);
+					let tiletype = KinkyDungeonMapGet(X + tx, Y + ty);
+					let tiledest = KinkyDungeonTilesGet((X + tx) + ',' + (Y + ty));
+					if (tiletype == 'V' && tiledest?.SwitchMode != "Off" && !entity) {
+						tile.cd = tile.rate;
+						let e = DialogueCreateEnemy(X + tx, Y + ty, tile.dollType || "FactoryDoll");
+						KinkyDungeonSetEnemyFlag(e, "conveyed", 1);
+						if (tile.count != undefined) tile.count -= 1;
+						break;
+					}
+					ind += 1;
+					ind = ind % 4;
+				}
+				tile.index = ind;
+			}
+		} else {
+			tile.cd -= delta;
+		}
+	},
+	"t": (delta, X, Y) => {
+		// Consume prisoners on the tile
+		let entity = KinkyDungeonEntityAt(X, Y);
+		if (entity && !entity.player) {
+			if (entity.Enemy?.tags.prisoner || KDHelpless(entity)) {
+				KDStaggerEnemy(entity);
+				if (!KDEnemyHasFlag(entity, "conveyed")) {
+					KDClearItems(entity);
+					entity.hp = 0;
+				}
+			} else {
+				// kick them out...
+				KDKickEnemyLocal(entity);
+			}
+
+		} else if (entity?.player && !KinkyDungeonFlags.get("nodollterm")) {
+			if (KinkyDungeonFlags.get("conveyed")) {
+				KDStartDialog("DollTerminal_Forced", "", true, "");
+			} else {
+				KDStartDialog("DollTerminal_Step", "", true, "");
+			}
+		}
+	},
+};
 
 /**
  * Return value: whether or not to continue to allow peripheral tile updates
- * @type {Record<string, (delta) => boolean>}
+ * @type {Record<string, KDBondageMachineFunc>}
+ */
+let KDBondageMachineFunctions = {
+	"Latex": {
+		eligible_player: (tile, x, y, entity) => {
+			return KDGetRestraintsEligible({tags: ['latexEncase']}, 10, 'grv', false, undefined, undefined, undefined, false).length > 0;
+		},
+		function_player: (tile, delta, x, y, entity) => {
+			KDBasicRestraintsMachine_Player(['latexEncase'], 2, "KDEncasement");
+			return false;
+		},
+		eligible_enemy: (tile, x, y, entity) => {
+			return true;
+		},
+		function_enemy: (tile, delta, x, y, entity) => {
+			KDTieUpEnemy(entity, 4.0, "Slime", "glue");
+			if (KDBoundEffects(entity) > 2 ) {
+				KDTieUpEnemy(entity, 4.0, "Slime", "glue");
+				KinkyDungeonApplyBuffToEntity(entity, KDEncasedDoll);
+			}
+			if (KDBoundEffects(entity) < 1 ) {
+				KinkyDungeonSetEnemyFlag(entity, "conveyed", 1);
+				KinkyDungeonSetEnemyFlag(entity, "processed", 1);
+				return true;
+			}
+			return false;
+		},
+	},
+	"Metal": {
+		eligible_player: (tile, x, y, entity) => {
+			return KDGetRestraintsEligible({tags: ["hitechCables", "cableGag", "controlHarness"]}, 10, 'grv', false, undefined, undefined, undefined, false).length > 0;
+		},
+		function_player: (tile, delta, x, y, entity) => {
+			KDBasicRestraintsMachine_Player(["hitechCables", "cableGag", "controlHarness"], 2, "KDMetalMachine");
+			return false;
+		},
+		eligible_enemy: (tile, x, y, entity) => {
+			return true;
+		},
+		function_enemy: (tile, delta, x, y, entity) => {
+			KDTieUpEnemy(entity, 4.0, "Metal", "chain");
+			if (KDBoundEffects(entity) < 1 ) {
+				KinkyDungeonSetEnemyFlag(entity, "conveyed", 1);
+				KinkyDungeonSetEnemyFlag(entity, "processed", 1);
+				return true;
+			}
+			return false;
+		},
+	},
+	"Tape": {
+		eligible_player: (tile, x, y, entity) => {
+			return KDGetRestraintsEligible({tags: ["autoTape"]}, 10, 'grv', false, undefined, undefined, undefined, false).length > 0;
+		},
+		function_player: (tile, delta, x, y, entity) => {
+			KDBasicRestraintsMachine_Player(["autoTape"], 2, "KDTapeMachine");
+			return false;
+		},
+		eligible_enemy: (tile, x, y, entity) => {
+			return true;
+		},
+		function_enemy: (tile, delta, x, y, entity) => {
+			KDTieUpEnemy(entity, 4.0, "Tape", "glue");
+			if (KDBoundEffects(entity) < 1 ) {
+				KinkyDungeonSetEnemyFlag(entity, "conveyed", 1);
+				KinkyDungeonSetEnemyFlag(entity, "processed", 1);
+				return true;
+			}
+			return false;
+		},
+	},
+	"Plug": {
+		eligible_player: (tile, x, y, entity) => {
+			return KDGetRestraintsEligible({tags: ['machinePlug']}, 10, 'grv', false, undefined, undefined, undefined, false).length > 0;
+		},
+		function_player: (tile, delta, x, y, entity) => {
+			return KDBasicRestraintsMachine_Player(['machinePlug'], 1, "KDPlugMachine") != 0;
+		},
+		eligible_enemy: (tile, x, y, entity) => {
+			return (entity.boundLevel > 0 || KDEntityGetBuff(entity, "Chastity")) && !(entity.buffs && KinkyDungeonGetBuffedStat(entity.buffs, "Plug") >= 2);
+		},
+		function_enemy: (tile, delta, x, y, entity) => {
+			KDPlugEnemy(entity);
+			if (KinkyDungeonGetBuffedStat(entity.buffs, "Plug") > 0) {
+				KinkyDungeonSetEnemyFlag(entity, "conveyed", 1);
+				KinkyDungeonSetEnemyFlag(entity, "processed", 1);
+				return true;
+			}
+			return false;
+		},
+	},
+	"Chastity": {
+		eligible_player: (tile, x, y, entity) => {
+			return KDGetRestraintsEligible({tags: ['machineChastity']}, 10, 'grv', false, undefined, undefined, undefined, false).length > 0;
+		},
+		function_player: (tile, delta, x, y, entity) => {
+			return KDBasicRestraintsMachine_Player(['machineChastity'], 1, "KDChastityMachine") != 0;
+		},
+		eligible_enemy: (tile, x, y, entity) => {
+			return entity.boundLevel > 0 && !KDEntityGetBuff(entity, "Chastity");
+		},
+		function_enemy: (tile, delta, x, y, entity) => {
+			KDTieUpEnemy(entity, 2.0, "Metal", "chain");
+			KinkyDungeonApplyBuffToEntity(entity, KDChastity);
+			if (KDEntityGetBuff(entity, "Chastity")) {
+				KinkyDungeonSetEnemyFlag(entity, "conveyed", 1);
+				KinkyDungeonSetEnemyFlag(entity, "processed", 1);
+				return true;
+			}
+			return false;
+		},
+	},
+};
+
+/**
+ *
+ * @param {string[]} tags
+ * @param {number} count
+ * @param {string} msg
+ */
+function KDBasicRestraintsMachine_Player(tags, count, msg) {
+	let succ = 0;
+	for (let i = 0; i < count; i++) {
+		let restraint = KinkyDungeonGetRestraint({tags: tags}, 10, 'grv', false, undefined, undefined, undefined, false);
+		if (restraint) {
+			succ = KinkyDungeonAddRestraintIfWeaker(restraint, MiniGameKinkyDungeonLevel, false, undefined, undefined, undefined, undefined, "AncientRobot", true) || succ;
+		}
+	}
+	if (succ) {
+		KinkyDungeonSetFlag("conveyed", 2);
+		KinkyDungeonSetFlag("processed", 3);
+		KinkyDungeonSendTextMessage(8, TextGet(msg), "#ffff44", 2);
+	}
+	return succ;
+}
+
+/**
+ * Return value: whether or not to continue to allow peripheral tile updates
+ * @type {Record<string, (delta: number) => boolean>}
  */
 let KDTileUpdateFunctions = {
 	"]": (delta) => { // Happy Gas!
@@ -17,19 +289,11 @@ let KDTileUpdateFunctions = {
 		return true;
 	},
 	"L" : (delta) => { // Barrel
-		if (KinkyDungeonTiles.get(KinkyDungeonPlayerEntity.x + "," + KinkyDungeonPlayerEntity.y)) {
-			if (KinkyDungeonTiles.get(KinkyDungeonPlayerEntity.x + "," + KinkyDungeonPlayerEntity.y).Furniture == "Cage" && !KDGameData.PrisonerState) {
-				let power = 0;
-				if (KDBoundPowerLevel >= 0.35) power = 2;
-				else if (KDBoundPowerLevel >= 0.1) power = 1;
-				if (power >= 2) {
-					KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {id: "cage", type: "SlowDetection", duration: 1, power: 4.0, player: true, enemies: true, endSleep: true, maxCount: 1, tags: ["SlowDetection", "move", "cast"]});
-					KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {id: "cage2", type: "Sneak", duration: 1, power: 9.95, player: true, enemies: true, endSleep: true, maxCount: 1, tags: ["Sneak", "darkness", "move", "cast"]});
-				} else if (power >= 1) {
-					KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {id: "cage", type: "SlowDetection", duration: 1, power: 4.0, player: true, enemies: true, endSleep: true, maxCount: 1, tags: ["SlowDetection", "move", "cast"]});
-					KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {id: "cage2", type: "Sneak", duration: 1, power: 2.95, player: true, enemies: true, endSleep: true, maxCount: 1, tags: ["Sneak", "darkness", "move", "cast"]});
-				}
-				KinkyDungeonSendTextMessage(3, TextGet("KinkyDungeonCage" + power), "lightgreen", 1, true);
+		if (KinkyDungeonTilesGet(KinkyDungeonPlayerEntity.x + "," + KinkyDungeonPlayerEntity.y)
+			&& KinkyDungeonTilesGet(KinkyDungeonPlayerEntity.x + "," + KinkyDungeonPlayerEntity.y).Furniture) {
+			let furn = KDFurniture[KinkyDungeonTilesGet(KinkyDungeonPlayerEntity.x + "," + KinkyDungeonPlayerEntity.y).Furniture];
+			if (furn) {
+				furn.tickFunction(delta);
 			}
 		} else {
 			KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {id: "barrel", type: "SlowDetection", duration: 1, power: 9.0, player: true, enemies: true, endSleep: true, maxCount: 1, tags: ["SlowDetection", "move", "cast"]});
@@ -54,8 +318,14 @@ let KDTileUpdateFunctions = {
  */
 let KDMoveObjectFunctions = {
 	'B': (moveX, moveY) => {
-		if (!KinkyDungeonFlags.get("slept") && !KinkyDungeonFlags.get("nobed") && KinkyDungeonStatWill < KinkyDungeonStatWillMax * 0.95) {
+		if (!KinkyDungeonFlags.get("slept") && !KinkyDungeonFlags.get("nobed") && KinkyDungeonStatWill < KinkyDungeonStatWillMax * 0.49) {
 			KDStartDialog("Bed", "", true);
+		}
+		return false;
+	},
+	'@': (moveX, moveY) => {
+		if (!KinkyDungeonFlags.get("nobutton")) {
+			KDStartDialog("Button", "", true);
 		}
 		return false;
 	},
@@ -66,24 +336,31 @@ let KDMoveObjectFunctions = {
 		return false;
 	},
 	'D': (moveX, moveY) => { // Open the door
-		let open = !KinkyDungeonStatsChoice.get("Doorknobs") || !KinkyDungeonIsHandsBound(true, true);
+		KinkyDungeonAdvanceTime(1, true);
+		let open = !KinkyDungeonStatsChoice.get("Doorknobs") || !KinkyDungeonIsHandsBound(true, true, 0.45);
 		if (!open) {
 			if (KinkyDungeonCanUseFeet()) {
 				KinkyDungeonSendActionMessage(10, TextGet("KDDoorknobFeet"), "#88ff88", 2);
 				open = true;
 			} else {
+				let grace = 0;
+				if (KinkyDungeonFlags.get("failUnfairFirst") && !KinkyDungeonFlags.get("failUnfair")) grace = 0.4;
 				let armsbound = KinkyDungeonIsArmsBound(true, true);
-				if (KDRandom() < (armsbound ? KDDoorKnobChance : KDDoorKnobChanceArms)) {
+				if (KDRandom() - grace < (armsbound ? KDDoorKnobChance : KDDoorKnobChanceArms)) {
 					KinkyDungeonSendActionMessage(10, TextGet("KDDoorknobSuccess" + ((armsbound) ? "" : "Arms")), "#88ff88", 2);
 					open = true;
-				} else if (KDRandom() < (armsbound ? KDDoorAttractChance : KDDoorAttractChanceArms) && DialogueBringNearbyEnemy(moveX, moveY, 10)) {
+				} else if (KDRandom() - grace < (armsbound ? KDDoorAttractChance : KDDoorAttractChanceArms) && DialogueBringNearbyEnemy(moveX, moveY, 10)) {
 					KinkyDungeonSendActionMessage(10, TextGet("KDDoorknobAttract" + ((armsbound) ? "" : "Arms")), "#ff5555", 2);
 					KinkyDungeonMakeNoise(armsbound ? 6 : 3, moveX, moveY);
 					open = true;
 				} else {
 					KinkyDungeonSendActionMessage(10, TextGet("KDDoorknobFail" + (armsbound ? "" : "Arms")), "#ff5555", 2);
 					KinkyDungeonMakeNoise(armsbound ? 6 : 3, moveX, moveY);
-					if (KinkyDungeonSound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Locked.ogg");
+					if (!KinkyDungeonFlags.get("failUnfairFirst")) {
+						KinkyDungeonSetFlag("failUnfair", 5);
+						KinkyDungeonSetFlag("failUnfairFirst", 10);
+					}
+					if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Locked.ogg");
 				}
 			}
 		}
@@ -91,29 +368,32 @@ let KDMoveObjectFunctions = {
 			KinkyDungeonMapSet(moveX, moveY, 'd');
 
 			// For private doors, aggro the faction
-			let faction = KinkyDungeonTiles.get(moveX + "," +moveY) && KinkyDungeonTiles.get(moveX + "," +moveY).Faction ? KinkyDungeonTiles.get(moveX + "," +moveY).Faction : undefined;
+			let faction = KinkyDungeonTilesGet(moveX + "," +moveY) && KinkyDungeonTilesGet(moveX + "," +moveY).Faction ? KinkyDungeonTilesGet(moveX + "," +moveY).Faction : undefined;
 			if (faction) {
 				KinkyDungeonAggroFaction(faction, true);
 			}
 
-			if (KinkyDungeonSound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/DoorOpen.ogg");
+			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/DoorOpen.ogg");
 		}
 
 		return true;
 	},
 	'C': (moveX, moveY) => { // Open the chest
-		let chestType = KinkyDungeonTiles.get(moveX + "," +moveY) && KinkyDungeonTiles.get(moveX + "," +moveY).Loot ? KinkyDungeonTiles.get(moveX + "," +moveY).Loot : "chest";
-		let faction = KinkyDungeonTiles.get(moveX + "," +moveY) && KinkyDungeonTiles.get(moveX + "," +moveY).Faction ? KinkyDungeonTiles.get(moveX + "," +moveY).Faction : undefined;
-		let noTrap = KinkyDungeonTiles.get(moveX + "," +moveY) && KinkyDungeonTiles.get(moveX + "," +moveY).NoTrap ? KinkyDungeonTiles.get(moveX + "," +moveY).NoTrap : false;
-		let lootTrap = KinkyDungeonTiles.get(moveX + "," +moveY) && KinkyDungeonTiles.get(moveX + "," +moveY).lootTrap ? KinkyDungeonTiles.get(moveX + "," +moveY).lootTrap : undefined;
-		let roll = KinkyDungeonTiles.get(moveX + "," +moveY) ? KinkyDungeonTiles.get(moveX + "," +moveY).Roll : KDRandom();
+		let chestType = KinkyDungeonTilesGet(moveX + "," +moveY) && KinkyDungeonTilesGet(moveX + "," +moveY).Loot ? KinkyDungeonTilesGet(moveX + "," +moveY).Loot : "chest";
+		let faction = KinkyDungeonTilesGet(moveX + "," +moveY) && KinkyDungeonTilesGet(moveX + "," +moveY).Faction ? KinkyDungeonTilesGet(moveX + "," +moveY).Faction : undefined;
+		let noTrap = KinkyDungeonTilesGet(moveX + "," +moveY) && KinkyDungeonTilesGet(moveX + "," +moveY).NoTrap ? KinkyDungeonTilesGet(moveX + "," +moveY).NoTrap : false;
+		let lootTrap = KinkyDungeonTilesGet(moveX + "," +moveY) && KinkyDungeonTilesGet(moveX + "," +moveY).lootTrap ? KinkyDungeonTilesGet(moveX + "," +moveY).lootTrap : undefined;
+		let roll = KinkyDungeonTilesGet(moveX + "," +moveY) ? KinkyDungeonTilesGet(moveX + "," +moveY).Roll : KDRandom();
 		if (faction && !KinkyDungeonChestConfirm) {
 			KinkyDungeonChestConfirm = true;
-			KinkyDungeonSendActionMessage(10, TextGet("KinkyDungeonChestFaction").replace("FACTION", TextGet("KinkyDungeonFaction" + faction)), "#ff0000", 2);
+			KinkyDungeonSendActionMessage(10, TextGet("KinkyDungeonChestFaction").replace("FACTION", TextGet("KinkyDungeonFaction" + faction)), "#ff0000", 2, true);
 		} else {
-			KinkyDungeonLoot(MiniGameKinkyDungeonLevel, KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint], chestType, roll, KinkyDungeonTiles.get(moveX + "," +moveY), undefined, noTrap);
-			if (lootTrap) KDSpawnLootTrap(moveX, moveY, lootTrap.trap, lootTrap.mult);
-			if (KinkyDungeonSound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/ChestOpen.ogg");
+			KinkyDungeonLoot(MiniGameKinkyDungeonLevel, KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint], chestType, roll, KinkyDungeonTilesGet(moveX + "," +moveY), undefined, noTrap);
+			if (lootTrap) {
+				KDTrigPanic();
+				KDSpawnLootTrap(KinkyDungeonPlayerEntity.x, KinkyDungeonPlayerEntity.y, lootTrap.trap, lootTrap.mult, lootTrap.duration);
+			}
+			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/ChestOpen.ogg");
 			KinkyDungeonMapSet(moveX, moveY, 'c');
 			KDGameData.AlreadyOpened.push({x: moveX, y: moveY});
 			KinkyDungeonAggroAction('chest', {faction: faction});
@@ -123,7 +403,7 @@ let KDMoveObjectFunctions = {
 	'Y': (moveX, moveY) => { // Open the chest
 		let chestType = KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint] == "lib" ? "shelf" : "rubble";
 		KinkyDungeonLoot(MiniGameKinkyDungeonLevel, KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint], chestType);
-		if (KinkyDungeonSound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Coins.ogg");
+		if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Coins.ogg");
 		KinkyDungeonMapSet(moveX, moveY, 'X');
 		KDGameData.AlreadyOpened.push({x: moveX, y: moveY});
 		return true;
@@ -131,7 +411,7 @@ let KDMoveObjectFunctions = {
 	'O': (moveX, moveY) => { // Open the chest
 		if (KinkyDungeonIsPlayer())
 			KinkyDungeonTakeOrb(1, moveX, moveY); // 1 spell point
-		if (KinkyDungeonSound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Magic.ogg");
+		if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Magic.ogg");
 		KDGameData.AlreadyOpened.push({x: moveX, y: moveY});
 		return true;
 	},
@@ -140,11 +420,11 @@ let KDMoveObjectFunctions = {
 			KDPerkConfirm = false;
 			KinkyDungeonTakePerk(1, moveX, moveY); // 1 perk choice
 		}
-		if (KinkyDungeonSound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Magic.ogg");
+		if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Magic.ogg");
 		return true;
 	},
 	'-': (moveX, moveY) => { // Open the chest
-		KinkyDungeonSendActionMessage(4, TextGet("KinkyDungeonObjectChargerDestroyed"), "gray", 2);
+		KinkyDungeonSendActionMessage(4, TextGet("KinkyDungeonObjectChargerDestroyed"), "#999999", 1, true);
 		return true;
 	},
 };
@@ -229,14 +509,43 @@ function KDSlimeWalker(entity) {
 }
 
 function KDSlimeImmune(enemy) {
-	return enemy.Enemy?.tags.slime || enemy.Enemy?.tagsglueimmune || enemy.Enemy?.tagsslimewalk || KDEntityBuffedStat(enemy, "glueDamageResist") >= 0.45;
+	return enemy.Enemy?.tags.slime || enemy.Enemy?.tags.glueimmune || enemy.Enemy?.tags.glueresist || enemy.Enemy?.tags.slimewalk || KDEntityBuffedStat(enemy, "glueDamageResist") >= 0.45;
 }
-
 /**
+ * These happen when stepped on
  * Return is whether or not something the player should know about happened
  * @type {Record<string, (delta, entity: entity, tile: effectTile) => boolean>}
  */
 let KDEffectTileFunctions = {
+	"PressurePlateHold": (delta, entity, tile) => {
+		KDCreateEffectTile(tile.x, tile.y, {
+			name: "WireSparks",
+			duration: 2,
+		}, 0);
+		return false;
+	},
+	"PressurePlate": (delta, entity, tile) => {
+		let tags = KDEffectTileTags(tile.x, tile.y);
+		if (!tags.ppactive) {
+			KDCreateEffectTile(tile.x, tile.y, {
+				name: "WireSparks",
+				duration: 2,
+			}, 0);
+		}
+		KDCreateEffectTile(tile.x, tile.y, {
+			name: "PressurePlateActive",
+			duration: 2,
+		}, 0);
+		return false;
+	},
+	"PressurePlateOneUse": (delta, entity, tile) => {
+		KDCreateEffectTile(tile.x, tile.y, {
+			name: "WireSparks",
+			duration: 2,
+		}, 0);
+		tile.duration = 0;
+		return false;
+	},
 	"SlimeBurning": (delta, entity, tile) => {
 		if (!KDEntityHasBuff(entity, "Drenched")) {
 			let slimeWalker = KDSlimeWalker(entity);
@@ -277,18 +586,18 @@ let KDEffectTileFunctions = {
 				if (entity.player) {
 					let latexData = {
 						cancelDamage: false,
-						dmg: KDLatexDmg,
+						dmg: KDLatexDmg*KDGetEnvironmentalDmg(),
 						type: "glue",
 					};
 					KinkyDungeonSendEvent("tickLatexPlayer", latexData);
 					if (!latexData.cancelDamage)
-						KinkyDungeonDealDamage({damage: latexData.dmg, type: latexData.type});
+						KinkyDungeonDealDamage({damage: latexData.dmg*KDGetEnvironmentalDmg(), type: latexData.type});
 				} else if (KDCanBind(entity)) {
 					let latexData = {
 						cancelDamage: entity.boundLevel > entity.Enemy.maxhp + KDLatexBind,
 						enemy: entity,
 						dmg: 0,
-						bind: KDLatexBind,
+						bind: KDLatexBind*KDGetEnvironmentalDmg(),
 						type: "glue",
 					};
 					KinkyDungeonSendEvent("tickLatex", latexData);
@@ -296,7 +605,7 @@ let KDEffectTileFunctions = {
 						KinkyDungeonDamageEnemy(entity, {
 							type: "glue",
 							damage: 0,
-							bind: KDLatexBind,
+							bind: KDLatexBind*KDGetEnvironmentalDmg(),
 							flags: ["DoT"]
 						}, false, true, undefined, undefined, undefined, "Rage");
 						if (entity.boundLevel >= entity.Enemy.maxhp) {
@@ -312,14 +621,18 @@ let KDEffectTileFunctions = {
 	"Ice": (delta, entity, tile) => {
 		if ((!entity.player && !entity.Enemy.tags.ice && !entity.Enemy.tags.nofreeze) || (entity.player && !KDChillWalk(entity)))
 			KinkyDungeonApplyBuffToEntity(entity, KDChilled);
-		if (entity.player && KinkyDungeonPlayerBuffs.Slipping)
+		if (entity.player && KinkyDungeonPlayerBuffs.Slipping && !KinkyDungeonFlags.get("slipped")) {
 			KDSlip({x: KinkyDungeonPlayerEntity.x - KinkyDungeonPlayerEntity.lastx, y: KinkyDungeonPlayerEntity.y - KinkyDungeonPlayerEntity.lasty});
+			KinkyDungeonSetFlag("slipped", 1);
+		}
 		return true;
 	},
 	"Water": (delta, entity, tile) => {
 		if (tile.pauseSprite == tile.name + "Frozen") {
-			if (entity.player && KinkyDungeonPlayerBuffs.Slipping)
+			if (entity.player && KinkyDungeonPlayerBuffs.Slipping && !KinkyDungeonFlags.get("slipped")) {
 				KDSlip({x: KinkyDungeonPlayerEntity.x - KinkyDungeonPlayerEntity.lastx, y: KinkyDungeonPlayerEntity.y - KinkyDungeonPlayerEntity.lasty});
+				KinkyDungeonSetFlag("slipped", 1);
+			}
 		} else if (KDWettable(entity)) {
 			KinkyDungeonApplyBuffToEntity(entity, KDDrenched);
 			KinkyDungeonApplyBuffToEntity(entity, KDDrenched2);
@@ -331,7 +644,7 @@ let KDEffectTileFunctions = {
 		if (entity.player) {
 			KinkyDungeonDealDamage({
 				type: "fire",
-				damage: 1,
+				damage: 1*KDGetEnvironmentalDmg(),
 				time: 0,
 				bind: 0,
 				flags: ["BurningDamage"]
@@ -340,7 +653,7 @@ let KDEffectTileFunctions = {
 		} else {
 			KinkyDungeonDamageEnemy(entity, {
 				type: "fire",
-				damage: 1,
+				damage: 1*KDGetEnvironmentalDmg(),
 				time: 0,
 				bind: 0,
 				flags: ["BurningDamage"]
@@ -408,6 +721,163 @@ let KDEffectTileCreateFunctionsCreator = {
 		}
 		return true;
 	},
+	"Sparks": (newTile, existingTile) => {
+		if (existingTile.tags.includes("conductive")) {
+			let rt = KDEffectTileTags(existingTile.x + 1, existingTile.y);
+			let lt = KDEffectTileTags(existingTile.x - 1, existingTile.y);
+			let ut = KDEffectTileTags(existingTile.x, existingTile.y - 1);
+			let dt = KDEffectTileTags(existingTile.x, existingTile.y + 1);
+			let dmg = {
+				type: "electric",
+				damage: 2.0,
+				time: 0,
+				bind: 0,
+				flags: ["EchoDamage"],
+			};
+			if (!rt.electric && rt.conductive) {
+				KDCreateEffectTile(existingTile.x + 1, existingTile.y, {
+					name: "Sparks",
+					duration: 2,
+				}, 2);
+				KDDealEnvironmentalDamage(existingTile.x + 1, existingTile.y, 0.5, dmg, undefined);
+			}
+			if (!lt.electric && lt.conductive) {
+				KDCreateEffectTile(existingTile.x - 1, existingTile.y, {
+					name: "Sparks",
+					duration: 2,
+				}, 2);
+				KDDealEnvironmentalDamage(existingTile.x - 1, existingTile.y, 0.5, dmg, undefined);
+			}
+			if (!dt.electric && dt.conductive) {
+				KDCreateEffectTile(existingTile.x, existingTile.y + 1, {
+					name: "Sparks",
+					duration: 2,
+				}, 2);
+				KDDealEnvironmentalDamage(existingTile.x, existingTile.y + 1, 0.5, dmg, undefined);
+			}
+			if (!ut.electric && ut.conductive) {
+				KDCreateEffectTile(existingTile.x, existingTile.y - 1, {
+					name: "Sparks",
+					duration: 2,
+				}, 2);
+				KDDealEnvironmentalDamage(existingTile.x, existingTile.y - 1, 0.5, dmg, undefined);
+			}
+		}
+		return true;
+	},
+	"WireSparks": (newTile, existingTile) => {
+		if (existingTile.tags.includes("wire")) {
+			let mapTile = KinkyDungeonTilesGet(newTile.x + ',' + newTile.y);
+			if (mapTile?.wireType) {
+				if (KDActivateMapTile[mapTile.wireType](mapTile, newTile.x, newTile.y)) {
+					return true;
+				}
+			}
+
+			let rt = KDEffectTileTags(existingTile.x + 1, existingTile.y);
+			let lt = KDEffectTileTags(existingTile.x - 1, existingTile.y);
+			let ut = KDEffectTileTags(existingTile.x, existingTile.y - 1);
+			let dt = KDEffectTileTags(existingTile.x, existingTile.y + 1);
+			if (!rt.signalFrame && rt.wire) {
+				KDCreateEffectTile(existingTile.x + 1, existingTile.y, {
+					name: "WireSparksAct",
+					duration: 1,
+				}, 0);
+				KDCreateEffectTile(existingTile.x + 1, existingTile.y, {
+					name: "WireSparks",
+					duration: 2,
+				}, 0);
+			}
+			if (!lt.signalFrame && lt.wire) {
+				KDCreateEffectTile(existingTile.x - 1, existingTile.y, {
+					name: "WireSparksAct",
+					duration: 1,
+				}, 0);
+				KDCreateEffectTile(existingTile.x - 1, existingTile.y, {
+					name: "WireSparks",
+					duration: 2,
+				}, 0);
+			}
+			if (!dt.signalFrame && dt.wire) {
+				KDCreateEffectTile(existingTile.x, existingTile.y + 1, {
+					name: "WireSparksAct",
+					duration: 1,
+				}, 0);
+				KDCreateEffectTile(existingTile.x, existingTile.y + 1, {
+					name: "WireSparks",
+					duration: 2,
+				}, 0);
+			}
+			if (!ut.signalFrame && ut.wire) {
+				KDCreateEffectTile(existingTile.x, existingTile.y - 1, {
+					name: "WireSparksAct",
+					duration: 1,
+				}, 0);
+				KDCreateEffectTile(existingTile.x, existingTile.y - 1, {
+					name: "WireSparks",
+					duration: 2,
+				}, 0);
+			}
+		}
+		return true;
+
+	},
+};
+
+/**
+ * Return is whether or not something the player should know about happened
+ * Return type is whether or not the signal should stop (true) or pass (false)
+ * @type {Record<string, (tile: any, x: number, y: number) => boolean>}
+ */
+let KDActivateMapTile = {
+	"increment": (tile, x, y) => {
+		if (!tile.count) tile.count = 0;
+		tile.count += 1;
+		return false;
+	},
+	"AutoDoor_Toggle": (tile, x, y) => {
+		let entity = KinkyDungeonEntityAt(x, y);
+		if (entity) return true;
+
+		if (KinkyDungeonMapGet(x, y) == 'Z')
+			KinkyDungeonMapSet(x, y, 'z');
+		else
+			KinkyDungeonMapSet(x, y, 'Z');
+		return true;
+	},
+	"Conveyor_Toggle": (tile, x, y) => {
+		if (tile.SwitchMode == "Off") tile.SwitchMode = "On";
+		else tile.SwitchMode = "Off";
+		return true;
+	},
+	"Conveyor_Switch": (tile, x, y) => {
+		if (tile.DX) tile.DX *= -1;
+		else if (tile.DY) tile.DY *= -1;
+		return true;
+	},
+	"AutoDoor_HoldOpen": (tile, x, y) => {
+		KinkyDungeonMapSet(x, y, 'z');
+		return true;
+	},
+	"AutoDoor_HoldClosed": (tile, x, y) => {
+		let entity = KinkyDungeonEntityAt(x, y);
+		if (entity) return true;
+
+		KinkyDungeonMapSet(x, y, 'Z');
+		return true;
+	},
+	"AutoDoor_Open": (tile, x, y) => {
+		KinkyDungeonMapSet(x, y, 'z');
+		return true;
+	},
+	"AutoDoor_Close": (tile, x, y) => {
+		let entity = KinkyDungeonEntityAt(x, y);
+		if (entity) return true;
+
+		KinkyDungeonMapSet(x, y, 'Z');
+		return true;
+	},
+
 };
 
 /**
@@ -492,16 +962,18 @@ let KDEffectTileMoveOnFunctions = {
 		return {cancelmove: false, returnvalue: false};
 	},
 	"Ice": (entity, tile, willing, dir, sprint) => {
-		if (sprint && entity.player && willing && (dir.x || dir.y)) {
+		if (sprint && entity.player && willing && (dir.x || dir.y) && !KinkyDungeonFlags.get("slipped")) {
 			KDSlip(dir);
+			KinkyDungeonSetFlag("slipped", 1);
 			return {cancelmove: true, returnvalue: true};
 		}
 		return {cancelmove: false, returnvalue: false};
 	},
 	"Water": (entity, tile, willing, dir, sprint) => {
 		if (tile.pauseSprite == tile.name + "Frozen") {
-			if (sprint && entity.player && willing && (dir.x || dir.y)) {
+			if (sprint && entity.player && willing && (dir.x || dir.y) && !KinkyDungeonFlags.get("slipped")) {
 				KDSlip(dir);
+				KinkyDungeonSetFlag("slipped", 1);
 				return {cancelmove: true, returnvalue: true};
 			}
 		}
@@ -645,13 +1117,19 @@ let KDEffectTileBulletFunctions = {
 					duration: 3,
 				}, 1); // Create ice
 			} else {
-				if ((KDIgnitionSources.includes(type)) && b.bullet.damage.damage > 0) {
+				if (type == "fire" && b.bullet.damage.damage > 0) {
 					tile.duration = 0;
 					KDSmokePuff(tile.x, tile.y, 1.5, 0.1, true);
 					KDCreateEffectTile(tile.x, tile.y, {
 						name: "Steam",
 						duration: 6,
 					}, 2); // Create steam
+				}
+				if (type == "electric" && b.bullet.damage.damage > 0) {
+					KDCreateEffectTile(tile.x, tile.y, {
+						name: "Sparks",
+						duration: 3,
+					}, 1); // Create sparks
 				}
 			}
 		}

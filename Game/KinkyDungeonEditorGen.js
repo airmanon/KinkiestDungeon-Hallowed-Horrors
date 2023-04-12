@@ -1,5 +1,7 @@
 "use strict";
 
+/** If a tile's weight is higher than this, then any time without this much weight will get culled from the list */
+let KD_GENWEIGHTCUTOFF = 100000;
 
 /**
  *
@@ -59,8 +61,9 @@ function KDMapTilesPopulate(w, h, indices, data, requiredAccess, maxTagFlags, ta
 	/**
 	 * @type {Record<string, boolean>}
 	 */
-	let globalTags = {
-	};
+	let globalTags = Object.assign({}, data.params.globalTags || {});
+
+	if (KinkyDungeonStatsChoice.get("arousalMode")) globalTags.arousalMode = true;
 
 	while (tileOrder.length > 0) {
 		let tileOrderInd = Math.floor(KDRandom() * tileOrder.length);
@@ -130,6 +133,7 @@ function KDMapTilesPopulate(w, h, indices, data, requiredAccess, maxTagFlags, ta
 		ii += 1;
 	}
 
+	console.log(tagCounts);
 	console.log(globalTags);
 	console.log(tilesFilled);
 	console.log(indexFilled);
@@ -169,7 +173,9 @@ function KDGetTileWeight(mapTile, tags, tagCounts, tagModifiers) {
 	// Indextags are basically the index for tags that have special modifiers
 	for (let i = 0; i < mapTile.indexTags.length; i++) {
 		let not = mapTile.notTags && mapTile.notTags[i];
-		if ((!not && tags[mapTile.indexTags[i]]) || (not && !tags[mapTile.indexTags[i]])) {
+		if (
+			(!not && tags[mapTile.indexTags[i]])
+			|| (not && !tags[mapTile.indexTags[i]])) {
 			// We abord if we've reached the max of this many tag
 			if (mapTile.maxTags[i] >= 0) {
 				let count = tagCounts[mapTile.maxTags[i]];
@@ -178,7 +184,7 @@ function KDGetTileWeight(mapTile, tags, tagCounts, tagModifiers) {
 			// We add weight
 			if (mapTile.bonusTags[i]) weight += mapTile.bonusTags[i];
 			// We multiply weight, in sequence, AFTER bonus from the same tag
-			if (mapTile.multTags[i]) weight *= mapTile.multTags[i];
+			if (mapTile.multTags[i] != undefined) weight *= mapTile.multTags[i];
 
 		}
 	}
@@ -192,6 +198,7 @@ function KDGetTileWeight(mapTile, tags, tagCounts, tagModifiers) {
 
 	return weight;
 }
+
 
 /**
  *
@@ -216,8 +223,11 @@ function KD_GetMapTile(index, indX, indY, tilesFilled, indexFilled, tagCounts, r
 	let WeightTotal = 0;
 	let Weights = [];
 
+
+	let maxWeight = 0;
+
 	for (let mapTile of Object.values(KDMapTilesList)) {
-		if (mapTile.primInd == index) {
+		if (mapTile.primInd == index || (mapTile.flexEdge && mapTile.flexEdge['1,1'])) {
 			if (!KDCheckMapTileFilling(mapTile, indX, indY, indices, requiredAccess, indexFilled)) continue;
 
 			if (!KDCheckMapTileAccess(mapTile, indX, indY, indexFilled, requiredAccess)) continue;
@@ -233,12 +243,22 @@ function KD_GetMapTile(index, indX, indY, tilesFilled, indexFilled, tagCounts, r
 
 			// Determine tile candidate weight and then commit to the array if it's positive
 			let weight = KDGetTileWeight(mapTile, tags, tagCounts, tagModifiers);
-			if (weight > 0) {
+			if (weight > 0 && (maxWeight < KD_GENWEIGHTCUTOFF || weight >= KD_GENWEIGHTCUTOFF)) {
+				maxWeight = weight;
 				Weights.push({tile: mapTile, weight: WeightTotal});
 				WeightTotal += mapTile.weight;
 			}
 		}
+	}
 
+	if (maxWeight >= KD_GENWEIGHTCUTOFF) {
+		// Cull all tiles under the cutoff
+		for (let L = Weights.length - 1; L >= 0; L--) {
+			if (Weights[L].weight < KD_GENWEIGHTCUTOFF) {
+				Weights[L].weight = 0;
+				break;
+			}
+		}
 	}
 
 	let selection = KDRandom() * WeightTotal;
@@ -268,21 +288,51 @@ function KD_GetMapTile(index, indX, indY, tilesFilled, indexFilled, tagCounts, r
  * @returns {boolean}
  */
 function KDCheckMapTileFilling(mapTile, indX, indY, indices, requiredAccess, indexFilled) {
+	let passCount = 0;
 	// Skip over larger tiles that dont fit the tilesFilled map or are already filled
 	for (let xx = 1; xx <= mapTile.w; xx++)
 		for (let yy = 1; yy <= mapTile.h; yy++) {
+			let fail = false;
 			// The index store of the map tile, we compare to the indices of indexfilled
 			let ind = mapTile.index[xx + ',' + yy];
+			// Skip map tile if out of bounds
+			if (!indices[(xx + indX - 1) + ',' + (yy + indY - 1)]) return false;
 			// Skip this mapTile if it doesnt fit
-			if (ind != indices[(xx + indX - 1) + ',' + (yy + indY - 1)]) return false;
+			if (ind != indices[(xx + indX - 1) + ',' + (yy + indY - 1)] && KDLooseIndexRankingSuspend(indices[(xx + indX - 1) + ',' + (yy + indY - 1)], ind, mapTile.w, mapTile.h, xx, yy)) {
+				if (mapTile.flexEdge && mapTile.flexEdge[xx + ',' + yy] && ((mapTile.flexEdgeSuper && mapTile.flexEdgeSuper[xx + ',' + yy]) || (
+					// 1st condition: tile is inside this one
+					// 2nd condition: this tile doesn't need it
+					// 3rd condition: other index is already filled
+					(yy > 1 || !indices[(xx + indX - 1) + ',' + (yy + indY - 1)].includes('u') || indexFilled[(xx + indX - 1) + ',' + (yy + indY - 1 - 1)])
+					&& (yy < mapTile.h || !indices[(xx + indX - 1) + ',' + (yy + indY - 1)].includes('d') || indexFilled[(xx + indX - 1) + ',' + (yy + indY - 1 + 1)])
+					&& (xx < mapTile.w || !indices[(xx + indX - 1) + ',' + (yy + indY - 1)].includes('l') || indexFilled[(xx + indX - 1 - 1) + ',' + (yy + indY - 1)])
+					&& (xx > 1 || !indices[(xx + indX - 1) + ',' + (yy + indY - 1)].includes('r') || indexFilled[(xx + indX - 1 + 1) + ',' + (yy + indY - 1)])
+				))) fail = true;
+				else return false;
+			}
 			// Skip this mapTile if it's already filled
 			if (indexFilled[(xx + indX - 1) + ',' + (yy + indY - 1)]) return false;
 			// Make sure none of the tile overlaps with required access...
 			if (mapTile.w != 1 || mapTile.h != 1 || (mapTile.inaccessible && mapTile.inaccessible.length > 0)) {
 				if (requiredAccess[(xx + indX - 1) + ',' + (yy + indY - 1)]) return false;
 			}
+			if (!fail)
+				passCount += 1;
 		}
-	return true;
+	return passCount > 0;
+}
+
+/** Suspends the inside of large tiles */
+function KDLooseIndexRankingSuspend(indexCheck, indexTile, w, h, xx, yy) {
+	if (w == 1 && h == 1) return true; // Tiles that are 1/1 dont get requirements suspended
+	if (xx > 1 && xx < w && yy > 1 && yy < h) return false; // Suspended tiles in the middle
+	if (!indexCheck) return true; // This means we hit the border
+	if (!indexTile) return true; // This is bad but it shouldnt crash the game. We just dont place the tile
+	if (indexCheck.includes('u') && yy == 1 && !indexTile.includes('u')) return true; // Dont suspend if we dont have the appropriate index entrance
+	if (indexCheck.includes('d') && yy == h && !indexTile.includes('d')) return true; // Dont suspend if we dont have the appropriate index entrance
+	if (indexCheck.includes('l') && xx == 1 && !indexTile.includes('l')) return true; // Dont suspend if we dont have the appropriate index entrance
+	if (indexCheck.includes('r') && xx == w && !indexTile.includes('r')) return true; // Dont suspend if we dont have the appropriate index entrance
+	return false;
 }
 
 /**
@@ -335,8 +385,20 @@ function KD_PasteTile(tile, x, y, data) {
 		for (let yy = 0; yy < tileHeight; yy++) {
 			let tileTile = tile.grid[xx + yy*(tileWidth+1)];
 			KinkyDungeonMapSetForce(x + xx, y + yy, tileTile);
+			if (tileTile == 'B' && !data.notraps && KinkyDungeonStatsChoice.has("Nowhere")) {
+				if (KDRandom() < 0.5)
+					KinkyDungeonTilesSet((x + xx) + "," + (y + yy), {
+						Type: "Trap",
+						Trap: "BedTrap",
+					});
+			}
 		}
 
+	if (tile.Keyring) {
+		for (let k of tile.Keyring) {
+			KDGameData.KeyringLocations.push({x:x + k.x, y:y + k.y});
+		}
+	}
 
 	if (tile.POI)
 		for (let origPoi of tile.POI) {
@@ -347,20 +409,20 @@ function KD_PasteTile(tile, x, y, data) {
 			if (poi.chance && KDRandom() > poi.chance)
 				poi.used = true;
 		}
-	for (let tileLoc of tile.Tiles) {
+	for (let tileLoc of Object.entries(tile.Tiles)) {
 		let xx = parseInt(tileLoc[0].split(',')[0]);
 		let yy = parseInt(tileLoc[0].split(',')[1]);
 		if (xx != undefined && yy != undefined) {
-			let gennedTile = KDCreateTile(xx+x, yy+y, tileLoc[1], data);
+			let gennedTile = KDCreateTile(xx+x, yy+y, Object.assign({}, tileLoc[1]), data);
 			if (gennedTile)
-				KinkyDungeonTiles.set((xx + x) + "," + (yy + y), gennedTile);
+				KinkyDungeonTilesSet((xx + x) + "," + (yy + y), gennedTile);
 		}
 	}
-	for (let tileLoc of tile.Skin) {
+	for (let tileLoc of Object.entries(tile.Skin)) {
 		let xx = parseInt(tileLoc[0].split(',')[0]);
 		let yy = parseInt(tileLoc[0].split(',')[1]);
 		if (xx != undefined && yy != undefined) {
-			KinkyDungeonTilesSkin.set((xx + x) + "," + (yy + y), tileLoc[1]);
+			KinkyDungeonTilesSkin[(xx + x) + "," + (yy + y)] = tileLoc[1];
 		}
 	}
 	/*for (let jail of tile.Jail) {
@@ -371,11 +433,11 @@ function KD_PasteTile(tile, x, y, data) {
 
 	}*/
 
-	for (let tileLoc of tile.effectTiles) {
+	for (let tileLoc of Object.entries(tile.effectTiles)) {
 		let xx = parseInt(tileLoc[0].split(',')[0]);
 		let yy = parseInt(tileLoc[0].split(',')[1]);
 		if (xx != undefined && yy != undefined) {
-			for (let eTile of tileLoc[1]) {
+			for (let eTile of Object.entries(tileLoc[1])) {
 				KDCreateEffectTileTile(xx+x, yy+y, eTile[1], data);
 			}
 		}
@@ -414,6 +476,13 @@ let KDEffectTileGen = {
 		}, 0);
 		return null;
 	},
+	"Wire": (x, y, tile, tileGenerator, data) => {
+		KDCreateEffectTile(x, y, {
+			name: "Wire",
+			duration: 9999,
+		}, 0);
+		return null;
+	},
 };
 
 /**
@@ -447,7 +516,7 @@ let KDTileGen = {
 		return null;
 	},
 	"Spawn": (x, y, tile, tileGenerator, data) => {
-		data.spawnpoints.push({x:x, y:y, required: tileGenerator.required, tags: tileGenerator.tags, AI: tileGenerator.AI});
+		data.spawnpoints.push({x:x, y:y, required: tileGenerator.required, ftags: tileGenerator.filterTags, tags: tileGenerator.tags, AI: tileGenerator.AI, faction: tileGenerator.faction});
 		KinkyDungeonMapSet(x, y, '0');
 		return null;
 	},
@@ -467,16 +536,17 @@ let KDTileGen = {
 	},
 	"Chest": (x, y, tile, tileGenerator, data) => {
 		if (tileGenerator.Loot) {
-			if (tileGenerator.Priority || KDRandom() < 0.5) {
+			if (tileGenerator.Priority || KDRandom() < (tileGenerator.Chance || 0.5)) {
 				KinkyDungeonMapSet(x, y, 'C');
+				KDGameData.ChestsGenerated.push(tileGenerator.Loot);
 				return {
 					NoTrap: tileGenerator.NoTrap,
-					Type: tileGenerator.Lock ? "Lock" : undefined, Lock: tileGenerator.Lock,
+					Type: tileGenerator.Lock ? "Lock" : undefined, Lock: tileGenerator.Lock == "Red" ? KDRandomizeRedLock() : tileGenerator.Lock,
 					Loot: tileGenerator.Lock == "Blue" ? "blue" : (tileGenerator.Loot ? tileGenerator.Loot : "chest"),
 					//Faction: tileGenerator.Faction,
 					Roll: KDRandom(),
 					Special: tileGenerator.Lock == "Blue",
-					RedSpecial: tileGenerator.Lock == "Red",
+					RedSpecial: tileGenerator.Lock?.includes("Red"),
 					lootTrap: KDGenChestTrap(false, x, y, (tileGenerator.Loot ? tileGenerator.Loot : "chest"), tileGenerator.Lock, tileGenerator.NoTrap),
 				};
 			} else {
@@ -498,7 +568,7 @@ let KDTileGen = {
 			Faction: faction,
 			Roll: KDRandom(),
 			Special: tileGenerator.Lock == "Blue",
-			RedSpecial: tileGenerator.Lock == "Red",
+			RedSpecial: tileGenerator.Lock?.includes("Red"),
 			lootTrap: KDGenChestTrap(false, x, y, (tileGenerator.Loot ? tileGenerator.Loot : "chest"), tileGenerator.Lock, tileGenerator.NoTrap),
 		};
 	},
@@ -522,6 +592,13 @@ let KDTileGen = {
 			|| "Ddg".includes(KinkyDungeonMapGet(x, y - 1))
 			|| "Ddg".includes(KinkyDungeonMapGet(x, y + 1)))
 			nodoorchance = 1.0;
+		else if (
+			!(KinkyDungeonMovableTiles.includes(KinkyDungeonMapGet(x + 1, y)) && KinkyDungeonMovableTiles.includes(KinkyDungeonMapGet(x - 1, y)))
+			&& !(KinkyDungeonMovableTiles.includes(KinkyDungeonMapGet(x, y + 1)) && KinkyDungeonMovableTiles.includes(KinkyDungeonMapGet(x, y - 1)))
+		) {
+			// No doors if there isn't a straight path
+			nodoorchance = 1.0;
+		}
 
 		// The door algorithm has been deprecated
 		//let doorlockchance = data.params.doorlockchance; // Max treasure chest count
@@ -532,7 +609,7 @@ let KDTileGen = {
 			} else {
 				KinkyDungeonMapSet(x, y, 'd');
 			}
-			return {Type: "Door", Lock: tileGenerator.Lock, OffLimits: tileGenerator.OffLimits};
+			return {Type: "Door", Lock: tileGenerator.Lock == "Red" ? KDRandomizeRedLock() : tileGenerator.Lock, OffLimits: tileGenerator.OffLimits};
 		} else {
 			KinkyDungeonMapSet(x, y, '2');
 		}
@@ -543,10 +620,30 @@ let KDTileGen = {
 		KinkyDungeonMapSet(x, y, 'a');
 		return null;
 	},
+	"DollDropoff": (x, y, tile, tileGenerator, data) => {
+		if (KinkyDungeonStatsChoice.get("NoDoll")) {
+			KinkyDungeonMapSet(x, y, '0');
+			return null;
+		}
+		KinkyDungeonMapSet(x, y, '5');
+		KDGameData.JailPoints.push({x: x, y: y, type: "dropoff", direction: tileGenerator.direction || {x: 0, y: -1}, radius: 1, restrainttags: ["dollstand"]});
+		//KinkyDungeonTilesSkinSet(x + "," + y, 'Bel');
+		return {Sprite: "Floor", Overlay: tileGenerator.Overlay || "DollDropoff"};
+	},
 	"Cage": (x, y, tile, tileGenerator, data) => {
 		KinkyDungeonMapSet(x, y, 'L');
 		KDGameData.JailPoints.push({x: x, y: y, type: "furniture", radius: 1});
 		return {Furniture: "Cage"};
+	},
+	"DisplayStand": (x, y, tile, tileGenerator, data) => {
+		KinkyDungeonMapSet(x, y, 'L');
+		KDGameData.JailPoints.push({x: x, y: y, type: "furniture", radius: 1});
+		return {Furniture: "DisplayStand"};
+	},
+	"Furniture": (x, y, tile, tileGenerator, data) => {
+		//KinkyDungeonMapSet(x, y, tileGenerator.tile);
+		KDGameData.JailPoints.push({x: x, y: y, type: "furniture", radius: 1});
+		return {Furniture: tileGenerator.Furniture};
 	},
 	"Table": (x, y, tile, tileGenerator, data) => {
 		KinkyDungeonMapSet(x, y, 'F');
@@ -576,17 +673,41 @@ let KDTileGen = {
 		let trapchance = data.params.trapchance || 0.1;
 		if (tileGenerator.Always || KDRandom() < trapchance)
 			data.traps.push(({x: x, y: y}));
-		else
-			KinkyDungeonMapSet(x, y, '2');
+		KinkyDungeonMapSet(x, y, '2');
 		return null;
 	},
 	"Charger": (x, y, tile, tileGenerator, data) => {
-		if (tileGenerator.priority) {
-			return {Type: "Charger", NoRemove: tile == '=', lightColor: KDChargerColor, Light: (tile == '=' ? KDChargerLight : undefined)};
+		if (tileGenerator.Priority) {
+			return {Type: "Charger", NoRemove: KinkyDungeonMapGet(x, y) == '=', lightColor: KDChargerColor, Light: (KinkyDungeonMapGet(x, y) == '=' ? KDChargerLight : undefined)};
 		}
 		KinkyDungeonMapSet(x, y, '-');
 		data.chargerlist.push(({x: x, y: y}));
 		return null;
+	},
+	"Conveyor": (x, y, tile, tileGenerator, data) => {
+		KinkyDungeonMapSet(x, y, 'V');
+		return {Type: "Conveyor", DX: tileGenerator.DX, DY: tileGenerator.DY, OffLimits: true, wireType: tileGenerator.wireType, SwitchMode: tileGenerator.SwitchMode};
+	},
+	"DollSupply": (x, y, tile, tileGenerator, data) => {
+		KinkyDungeonMapSet(x, y, 'u');
+		return {Type: "DollSupply", index: 0, cd: 0, rate: tileGenerator.rate || 10, count: tileGenerator.count, dollType: tileGenerator.dollType, SwitchMode: tileGenerator.SwitchMode, wireType: tileGenerator.wireType};
+	},
+	"DollTerminal": (x, y, tile, tileGenerator, data) => {
+		KinkyDungeonMapSet(x, y, 't');
+		return {Type: "DollTerminal", OffLimits: true};
+	},
+	"BondageMachine": (x, y, tile, tileGenerator, data) => {
+		KinkyDungeonMapSet(x, y, 'N');
+		return {Type: "BondageMachine", OffLimits: true, Binding: tileGenerator.Binding};
+	},
+	"EffectTile": (x, y, tile, tileGenerator, data) => {
+		KDCreateEffectTile(x, y, {
+			name: tileGenerator.Tile,
+		}, 0);
+		return null;
+	},
+	"AutoDoor": (x, y, tile, tileGenerator, data) => {
+		return {wireType: tileGenerator.wireType};
 	},
 };
 

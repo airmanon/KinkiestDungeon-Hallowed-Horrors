@@ -2,69 +2,78 @@
 
 const KDANGER = -19;
 const KDRAGE = -31;
+const KDPLEASED = 15;
+const KDFRIENDLY = 35;
 
 let KDFactionGoddess = {
 	"Metal": {
-		"Angel": 0.001,
+		"Angel": 0.002,
 		"Demon": -0.001,
-		"Nevermere": 0.01,
-		"AncientRobot": 0.005,
-		"Alchemist": 0.0025,
+		"Nevermere": -0.001,
+		"AncientRobot": 0.007,
+		"Elemental": 0.001,
 	},
 	"Rope": {
-		"Angel": 0.001,
+		"Angel": 0.002,
 		"Demon": -0.001,
 		"KinkyConstruct": 0.005,
 		"Dressmaker": 0.005,
 		"Bountyhunter": 0.002,
 		"Bast": 0.0025,
+		"AncientRobot": 0.001,
 	},
 	"Elements": {
-		"Angel": 0.001,
+		"Angel": 0.007,
 		"Demon": -0.001,
 		"Witch": 0.003,
 		"Apprentice": 0.0015,
 		"Elemental": 0.01,
+		//"Mushy": 0.001,
+		"AncientRobot": -0.001,
 	},
 	"Leather": {
-		"Angel": 0.001,
+		"Angel": 0.002,
 		"Demon": -0.001,
 		"Elf": 0.001,
 		"Dragon": 0.005,
 		"Bandit": 0.01,
 		"Elemental": 0.002,
+		"AncientRobot": 0.001,
 	},
 	"Latex": {
-		"Angel": 0.001,
+		"Angel": 0.002,
 		"Demon": -0.001,
 		"Maidforce": 0.0015,
 		"Alchemist": 0.01,
 		"Nevermere": 0.003,
-		"Elemental": 0.001,
+		"AncientRobot": 0.001,
 	},
 	"Will": {
-		"Angel": 0.001,
+		"Angel": 0.007,
 		"Demon": -0.005,
 		"Elf": 0.005,
-		"Mushy": 0.0035,
+		//"Mushy": 0.0035,
 		"Bast": 0.005,
 		"Apprentice": 0.001,
+		"AncientRobot": -0.001,
 	},
 	"Conjure": {
-		"Angel": 0.001,
+		"Angel": 0.007,
 		"Demon": -0.001,
 		"Alchemist": 0.002,
 		"Witch": 0.003,
 		"Apprentice": 0.0015,
 		"Dressmaker": 0.005,
+		"AncientRobot": -0.001,
 	},
 	"Illusion": {
-		"Angel": 0.001,
+		"Angel": 0.007,
 		"Demon": -0.001,
 		"Witch": 0.003,
 		"Apprentice": 0.0015,
 		"Maidforce": 0.007,
 		"Bountyhunter": 0.002,
+		"AncientRobot": -0.001,
 		//"Ghost": 0.005,
 	},
 };
@@ -154,9 +163,9 @@ function KinkyDungeonInitReputation() {
 function KinkyDungeonRepName(Amount) {
 	let name = "";
 
-	if (Amount > 10) name = "Thankful";
-	if (Amount > 30) name = "Pleased";
-	if (Amount > 45) name = "Blessed";
+	if (Amount >= 10) name = "Thankful";
+	if (Amount >= 30) name = "Pleased";
+	if (Amount >= 45) name = "Blessed";
 	if (Amount < KDANGER) name = "Angered";
 	if (Amount < KDRAGE) name = "Enraged";
 	if (Amount < -45) name = "Cursed";
@@ -172,7 +181,7 @@ function KinkyDungeonRepName(Amount) {
 function KinkyDungeonRepNameFaction(Amount) {
 	let name = "";
 
-	if (Amount > 0.25) name = "Thankful";
+	if (Amount > 0.2) name = "Thankful";
 	if (Amount >= 0.4) name = "Pleased";
 	if (Amount > 0.7) name = "Blessed";
 	if (Amount < -0.1) name = "Angered";
@@ -313,7 +322,7 @@ function KinkyDungeonDrawReputation() {
 	KinkyDungeonDrawMessages(true);
 	let i = 0;
 	let XX = 0;
-	let spacing = 60;
+	let spacing = 600 / Object.keys(KinkyDungeonGoddessRep).length;
 	let yPad = 50;
 	let tooltip = "";
 
@@ -332,16 +341,16 @@ function KinkyDungeonDrawReputation() {
 			if (value < -10) {
 				if (value < -30) color = "#ff0000";
 				else color = "#ff8800";
-			} else if (value > 10) {
-				if (value > 30) color = "#00ff00";
+			} else if (value >= 10) {
+				if (value >= 30) color = "#00ff00";
 				else color = "#88ff00";
 			}
 			if (tooltip) {
 				goddessColor = "#888888";
 				if (KDFactionGoddess[rep] && KDFactionGoddess[rep][tooltip] != 0) {
-					goddessColor = KDFactionGoddess[rep][tooltip] > 0 ? "#ffffff" : "#ff4444";
+					goddessColor = KDFactionGoddess[rep][tooltip] > 0 ? "#ffffff" : (KDFactionGoddess[rep][tooltip] < 0 ? "#ff5555" : "#999999");
 					if (KDFactionGoddess[rep][tooltip] >= 0.006) goddessSuff = "+++";
-					else if (KDFactionGoddess[rep][tooltip] >= 0.004) goddessSuff = "+++";
+					else if (KDFactionGoddess[rep][tooltip] >= 0.003) goddessSuff = "++";
 					else if (KDFactionGoddess[rep][tooltip] >= 0.00001) goddessSuff = "+";
 					else if (KDFactionGoddess[rep][tooltip] <= -0.00001) goddessSuff = "-";
 					else if (KDFactionGoddess[rep][tooltip] <= 0.004) goddessSuff = "--";
@@ -355,6 +364,8 @@ function KinkyDungeonDrawReputation() {
 				DrawTextFitKD(suff, canvasOffsetX_ui + 275 + XX + 250, yPad + canvasOffsetY_ui + spacing * i, 100, "white", "black");
 			}
 			DrawProgressBar(canvasOffsetX_ui + 275 + XX, yPad + canvasOffsetY_ui + spacing * i - spacing/4, 200, spacing/2, 50 + value, color, KDTextGray2);
+			if (KinkyDungeonShrineBaseCosts[rep])
+				KDDrawRestraintBonus(rep, canvasOffsetX_ui + 275 + XX - 70, yPad + canvasOffsetY_ui + spacing * i, undefined, 24);
 
 			MainCanvas.textAlign = "center";
 			DrawTextKD(" " + (Math.round(value)+50) + " ", canvasOffsetX_ui + 275 + XX + 100,  2+yPad + canvasOffsetY_ui + spacing * i, "white", "black");
@@ -488,18 +499,23 @@ function KinkyDungeonDrawFactionRep() {
 				case 'Maidforce': tcolor ="white"; break;
 				case "Bast": tcolor ="#ff0000"; break;
 				case "Elf": tcolor ="#42a459"; break;
-				case 'Mushy': tcolor ="cyan"; break;
+				//case 'Mushy': tcolor ="cyan"; break;
 				case 'AncientRobot': tcolor ="grey"; break;
 			}
 
 			if (MouseIn(canvasOffsetX_ui + XX, yPad + canvasOffsetY_ui + spacing * i - spacing/2, barSpacing + 200, yPad)) {
 				let allytext = "";
 				let enemytext = "";
+				let friendstext = "";
 				for (let ee of Object.keys(KinkyDungeonFactionRelations.Player)) {
 					if (!KinkyDungeonHiddenFactions.includes(ee)) {
 						if (rep != ee && KDFactionRelation(rep, ee) >= 0.5) {
 							if (allytext) allytext += ", ";
 							allytext += TextGet("KinkyDungeonFaction" + ee);
+						}
+						if (rep != ee && KDFactionRelation(rep, ee) > 0.15 && KDFactionRelation(rep, ee) < 0.5) {
+							if (friendstext) friendstext += ", ";
+							friendstext += TextGet("KinkyDungeonFaction" + ee);
 						}
 						if (rep != ee && KDFactionRelation(rep, ee) <= -0.5) {
 							if (enemytext) enemytext += ", ";
@@ -512,13 +528,17 @@ function KinkyDungeonDrawFactionRep() {
 					loc = {x: canvasOffsetX_ui, y: 820, fit: 1400};
 				}
 				if (!text) {
+					if (enemytext) {
+						text = true;
+						DrawTextFitKD(TextGet("KDFriendsWith") + friendstext, loc.x, loc.y, loc.fit, "white", KDTextGray1, 20);
+					}
 					if (allytext) {
 						text = true;
-						DrawTextFitKD(TextGet("KDAlliedWith") + allytext, loc.x, loc.y, loc.fit, "white", KDTextGray1, 20);
+						DrawTextFitKD(TextGet("KDAlliedWith") + allytext, loc.x, loc.y + 30, loc.fit, "white", KDTextGray1, 20);
 					}
 					if (enemytext) {
 						text = true;
-						DrawTextFitKD(TextGet("KDHostileWith") + enemytext, loc.x, loc.y + 30, loc.fit, "white", KDTextGray1, 20);
+						DrawTextFitKD(TextGet("KDHostileWith") + enemytext, loc.x, loc.y + 60, loc.fit, "white", KDTextGray1, 20);
 					}
 				}
 
@@ -626,7 +646,7 @@ function KinkyDungeonRescueTiles() {
 	for (let X = KinkyDungeonPlayerEntity.x - 1; X <= KinkyDungeonPlayerEntity.x + 1; X++)
 		for (let Y = KinkyDungeonPlayerEntity.y - 1; Y <= KinkyDungeonPlayerEntity.y + 1; Y++) {
 			if (X != 0 || Y != 0) {
-				if (KinkyDungeonGroundTiles.includes(KinkyDungeonMapGet(X, Y)) && !KinkyDungeonEnemyAt(X, Y)) {
+				if (KinkyDungeonGroundTiles.includes(KinkyDungeonMapGet(X, Y)) && KinkyDungeonNoEnemy(X, Y, true)) {
 					tiles.push({x:X, y:Y});
 				}
 			}
@@ -651,7 +671,7 @@ function KinkyDungeonCanRescue(rep, value) {
 function KinkyDungeonUpdateAngel(delta) {
 	// Remove it
 	if (KinkyDungeonFlags.get("AngelHelp") > 0 && KinkyDungeonFlags.get("AngelHelp") < 5) {
-		for (let t of KinkyDungeonTiles.entries()) {
+		for (let t of Object.entries(KinkyDungeonTiles)) {
 			if (t[1].Type == "Angel") {
 				let x = parseInt(t[0].split(',')[0]);
 				let y = parseInt(t[0].split(',')[1]);
@@ -660,7 +680,7 @@ function KinkyDungeonUpdateAngel(delta) {
 						KinkyDungeonTargetTile = null;
 						KinkyDungeonTargetTileLocation = "";
 					}
-					KinkyDungeonTiles.delete(t[0]);
+					KinkyDungeonTilesDelete(t[0]);
 					KinkyDungeonMapSet(x, y, '0');
 				}
 			}

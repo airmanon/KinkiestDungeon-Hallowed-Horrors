@@ -18,7 +18,9 @@ let KinkyDungeonShrineBaseCosts = {
 
 let KDWillShrineWill = 0.25;
 let KinkyDungeonOrbAmount = 0;
-let KDShrineRemoveCount = 3;
+let KDShrineRemoveCount = 30;
+let KDMaxGoddessBonus = 0.2;
+let KDMinGoddessBonus = 0.15;
 
 /**
  * Cost growth, overrides the default amount
@@ -30,10 +32,6 @@ let KinkyDungeonShrineBaseCostGrowth = {
 	"Illusion": 2,
 };
 
-/**
- * @type {shopItem[]}
- */
-let KinkyDungeonShopItems = [];
 let KinkyDungeonShopIndex = 0;
 
 let KinkyDungeonShrinePoolChancePerUse = 0.2;
@@ -75,7 +73,7 @@ function KDGoddessColor(Name) {
 
 function KinkyDungeonShrineAvailable(type) {
 	if (type == "Commerce") {
-		if (KinkyDungeonShopItems.length > 0) return true;
+		if (KDGameData.ShopItems.length > 0) return true;
 		else return false;
 	}
 	if (KinkyDungeonShrineTypeRemove.includes(type) && KinkyDungeonGetRestraintsWithShrine(type).length > 0) return true;
@@ -94,7 +92,7 @@ let KDLevelsPerCheckpoint = 4;
 function KinkyDungeonGenerateShop(Level) {
 	KDGameData.PoolUses = Math.min(KDGameData.PoolUses, KinkyDungeonStatsChoice.get("Blessed") ? 0 : 1);
 	KinkyDungeonShopIndex = 0;
-	KinkyDungeonShopItems = [];
+	KDGameData.ShopItems = [];
 	let items_mid = 0;
 	let items_high = 0;
 	let itemCount = 8 + Math.floor(KDRandom() * 3);
@@ -110,9 +108,9 @@ function KinkyDungeonGenerateShop(Level) {
 
 		let item = KinkyDungeonGetShopItem(Level, Rarity, true);
 		if (item)
-			KinkyDungeonShopItems.push({name: item.name, shoptype: item.shoptype, consumable: item.consumable, quantity: item.quantity, rarity: item.rarity, cost: item.cost});
+			KDGameData.ShopItems.push({name: item.name, shoptype: item.shoptype, consumable: item.consumable, quantity: item.quantity, rarity: item.rarity, cost: item.cost});
 	}
-	KinkyDungeonShopItems.sort(function(a, b){return a.rarity-b.rarity;});
+	KDGameData.ShopItems.sort(function(a, b){return a.rarity-b.rarity;});
 }
 
 /**
@@ -134,7 +132,11 @@ function KinkyDungeonItemCost(item, noScale, sell) {
 		}
 		return costt;
 	}
-	return 15;
+	let costs = 15;
+	if (KinkyDungeonStatsChoice.has("PriceGouging") && !sell) {
+		costs *= 5;
+	}
+	return costs;
 }
 
 function KinkyDungeonShrineCost(type) {
@@ -142,9 +144,10 @@ function KinkyDungeonShrineCost(type) {
 	let growth = 1.0;
 	let noMult = false;
 
-	if (type == "Commerce" && KinkyDungeonShopIndex < KinkyDungeonShopItems.length) {
-		let item = KinkyDungeonShopItems[KinkyDungeonShopIndex];
-		return Math.round(KinkyDungeonItemCost(item) * (1 + 0.01 * KinkyDungeonDifficulty));
+	if (type == "Commerce" && KinkyDungeonShopIndex < KDGameData.ShopItems.length) {
+		if (!KDGameData.ShopItems) KDGameData.ShopItems = [];
+		let item = KDGameData.ShopItems[KinkyDungeonShopIndex];
+		return Math.round(KinkyDungeonItemCost(item));
 	} else if (KinkyDungeonShrineTypeRemove.includes(type)) {
 		let rest = KinkyDungeonGetRestraintsWithShrine(type);
 		let maxPower = 1;
@@ -194,7 +197,7 @@ function KinkyDungeonPayShrine(type) {
 
 	// TODO shrine effects
 	if (KinkyDungeonShrineTypeRemove.includes(type)) {
-		rep = KinkyDungeonRemoveRestraintsWithShrine(type, KDShrineRemoveCount);
+		rep = KinkyDungeonRemoveRestraintsWithShrine(type, KDShrineRemoveCount, true);
 		KinkyDungeonChangeRep("Ghost", -rep);
 
 		ShrineMsg = TextGet("KinkyDungeonPayShrineRemoveRestraints");
@@ -217,7 +220,7 @@ function KinkyDungeonPayShrine(type) {
 			]});
 		}
 		KDSendStatus('goddess', type, 'shrineDonate');
-		rep = 1;
+		rep = 2.5;
 	} else if (type == "Will") {
 		rep = Math.ceil(5 - KinkyDungeonStatMana * 1.5 / KinkyDungeonStatManaMax - KinkyDungeonStatWill * 3.5 / KinkyDungeonStatWillMax);
 		KinkyDungeonChangeMana(KinkyDungeonStatManaMax, false, 0, false, true);
@@ -227,7 +230,7 @@ function KinkyDungeonPayShrine(type) {
 		ShrineMsg = TextGet("KinkyDungeonPayShrineHeal");
 		KDSendStatus('goddess', type, 'shrineHeal');
 	} else if (type == "Commerce") {
-		let item = KinkyDungeonShopItems[KinkyDungeonShopIndex];
+		let item = KDGameData.ShopItems[KinkyDungeonShopIndex];
 		if (item) {
 			if (item.shoptype == "Consumable")
 				KinkyDungeonChangeConsumable(KinkyDungeonConsumables[item.name], 1);
@@ -235,13 +238,13 @@ function KinkyDungeonPayShrine(type) {
 				KinkyDungeonInventoryAddWeapon(item.name);
 			else if (item.shoptype == "Restraint") {
 				let restraint = KinkyDungeonGetRestraintByName(item.name);
-				KinkyDungeonInventoryAdd({name: item.name, type: LooseRestraint, events:restraint.events});
+				KinkyDungeonInventoryAdd({name: item.name, id: KinkyDungeonGetItemID(), type: LooseRestraint, events:restraint.events});
 			}
 			else if (item.shoptype == "Basic") {
 				KDAddBasic(item);
 			}
 			ShrineMsg = TextGet("KinkyDungeonPayShrineCommerce").replace("ItemBought", TextGet("KinkyDungeonInventoryItem" + item.name));
-			KinkyDungeonShopItems.splice(KinkyDungeonShopIndex, 1);
+			KDGameData.ShopItems.splice(KinkyDungeonShopIndex, 1);
 			if (KinkyDungeonShopIndex > 0) KinkyDungeonShopIndex -= 1;
 
 			rep = item.rarity + 1;
@@ -267,15 +270,15 @@ function KinkyDungeonHandleShrine() {
 
 	if (type == "Commerce") {
 		if (cost > 0) {
-			if (MouseIn(KDModalArea_x + 410, KDModalArea_y + 25, 112-15, 60) && cost <= KinkyDungeonGold) {
-				KDSendInput("shrineBuy", {type: type, shopIndex: KinkyDungeonShopIndex});
-				return true;
-			}
-			else if (MouseIn(KDModalArea_x + 613, KDModalArea_y + 25, 112, 60)) {
-				KinkyDungeonShopIndex = (KinkyDungeonShopIndex + 1) % KinkyDungeonShopItems.length;
+			//if (MouseIn(KDModalArea_x + 410, KDModalArea_y + 25, 112-15, 60) && cost <= KinkyDungeonGold) {
+			//return true;
+			//}
+			//else if (MouseIn(KDModalArea_x + 613, KDModalArea_y + 25, 112, 60)) {
+			//KinkyDungeonShopIndex = (KinkyDungeonShopIndex + 1) % KDGameData.ShopItems.length;
+			//
 
-				return true;
-			}
+			//return true;
+			//}
 
 		}
 	}
@@ -293,49 +296,72 @@ function KinkyDungeonDrawShrine() {
 		if (cost == 0) {
 			DrawTextKD(TextGet("KinkyDungeonLockedShrine"), KDModalArea_x, KDModalArea_y, "#ffffff", KDTextGray2);
 		} else {
+			let shopHeight = Math.max(8, KDGameData.ShopItems.length) * 50;
+
 			FillRectKD(kdcanvas, kdpixisprites, "shopbg", {
 				Left: KDModalArea_x - 25,
-				Top: KDModalArea_y + 80 - KinkyDungeonShopItems.length * 50,
-				Width: 800,
-				Height: KinkyDungeonShopItems.length * 50 + 20,
+				Top: KDModalArea_y + 80 - shopHeight,
+				Width: 900,
+				Height: shopHeight + 20,
 				Color: KDTextGray0,
 				LineWidth: 1,
 				zIndex: 60,
 				alpha: 0.4,
 			});
 			// Wrap around shop index to prevent errors
-			if (KinkyDungeonShopIndex > KinkyDungeonShopItems.length) {
+			if (KinkyDungeonShopIndex > KDGameData.ShopItems.length) {
 				KinkyDungeonShopIndex = 0;
-			} else if (KinkyDungeonShopItems.length > 0 && KinkyDungeonShopItems[KinkyDungeonShopIndex]) {
+			} else if (KDGameData.ShopItems.length > 0 && KDGameData.ShopItems[KinkyDungeonShopIndex]) {
 				// Draw the item and cost
 			}
 
-			DrawButtonVis(KDModalArea_x + 410, KDModalArea_y + 25, 112-15, 60, TextGet("KinkyDungeonCommercePurchase").replace("ItemCost", "" + cost), (cost <= KinkyDungeonGold) ? "White" : "Pink", "", "");
+			DrawButtonKDEx("shrinebuy", (bdata) => {
+				KDSendInput("shrineBuy", {type: type, shopIndex: KinkyDungeonShopIndex});
+				return true;
+			}, cost <= KinkyDungeonGold, KDModalArea_x + 550, KDModalArea_y + 25, 200, 60, TextGet("KinkyDungeonCommercePurchase").replace("ItemCost", "" + cost), (cost <= KinkyDungeonGold) ? "#ffffff" : "#ff5555", "", "");
 
+			if (KDShopBuyConfirm) {
+				DrawTextFitKD(TextGet("KDShopConfirm"),
+					KDModalArea_x + 650, KDModalArea_y + 25 - 25, 250, "#88ff88", undefined, 20,);
+			}
 			// Draw the list of shop items
 			let ii = 0;
-			for (let l of KinkyDungeonShopItems) {
-				DrawTextFitKD(TextGet("KinkyDungeonInventoryItem" + l.name), KDModalArea_x + 175/2, KDModalArea_y + 65 - ii * 50, 175, KinkyDungeonShopItems[KinkyDungeonShopIndex].name == l.name ? "white" : KDTextGray3, KDTextGray2);
-				DrawTextFitKD(TextGet("KinkyDungeonCommerceCost").replace("ItemCost", "" + KinkyDungeonItemCost(l)), KDModalArea_x + 300, KDModalArea_y + 65 - ii * 50, 100, KinkyDungeonShopItems[KinkyDungeonShopIndex].name == l.name ? "white" : KDTextGray3, KDTextGray2);
+			for (let l of KDGameData.ShopItems) {
+				if (KDGameData.ShopItems[ii]) {
+					let index = ii;
+					DrawButtonKDEx("l.name" + ii, (bdata) => {
+						KinkyDungeonShopIndex = index;
+						return true;
+					}, true,
+					KDModalArea_x - 20, KDModalArea_y + 40 - ii * 50, 400 + 20 + 20, 45, "", "#444444", "", undefined, false, true, "#000000", undefined, undefined, {
+						alpha: 0.4
+					}
+					);
+				}
+				DrawTextFitKD(TextGet("KinkyDungeonInventoryItem" + l.name), KDModalArea_x + 175/2, KDModalArea_y + 65 - ii * 50, 200, KDGameData.ShopItems[KinkyDungeonShopIndex].name == l.name ? "white" : KDTextGray3, KDTextGray2, 20);
+				DrawTextFitKD(TextGet("KinkyDungeonCommerceCost").replace("ItemCost", "" + KinkyDungeonItemCost(l)), KDModalArea_x + 300, KDModalArea_y + 65 - ii * 50, 130, KDGameData.ShopItems[KinkyDungeonShopIndex].name == l.name ? "#ffffff" : KDTextGray3, KDTextGray2, 20);
 				ii++;
 			}
-			let wrapAmount = TranslationLanguage == 'CN' ? 15 : 40;
-			let textSplit = KinkyDungeonWordWrap(TextGet("KinkyDungeonInventoryItem" + KinkyDungeonShopItems[KinkyDungeonShopIndex].name + "Desc"), wrapAmount).split('\n');
-			let textSplit2 = KinkyDungeonWordWrap(TextGet("KinkyDungeonInventoryItem" + KinkyDungeonShopItems[KinkyDungeonShopIndex].name +  "Desc2"), wrapAmount).split('\n');
+			let textSplit = KinkyDungeonWordWrap(TextGet("KinkyDungeonInventoryItem" + KDGameData.ShopItems[KinkyDungeonShopIndex].name + "Desc"), 15, 40).split('\n');
+			let textSplit2 = KinkyDungeonWordWrap(TextGet("KinkyDungeonInventoryItem" + KDGameData.ShopItems[KinkyDungeonShopIndex].name +  "Desc2"), 15, 40).split('\n');
 			let i = 0;
+			let descSpacing = 30;
 			for (let N = 0; N < textSplit.length; N++) {
 				DrawTextFitKD(textSplit[N],
-					KDModalArea_x+565, KDModalArea_y + 120 - KinkyDungeonShopItems.length * 50 + i * 50, 380 * (textSplit[N].length / 40), "white");
+					KDModalArea_x+650, KDModalArea_y + 120 - shopHeight + i * descSpacing, 380 * (textSplit[N].length / 40), "#ffffff", undefined, 20,);
 				i++;
 			}
 			i += 1;
 			for (let N = 0; N < textSplit2.length; N++) {
 				DrawTextFitKD(textSplit2[N],
-					KDModalArea_x+565, KDModalArea_y + 120 - KinkyDungeonShopItems.length * 50 + i * 50, 380 * (textSplit2[N].length / 40), "white");
+					KDModalArea_x+650, KDModalArea_y + 120 - shopHeight * 50 + i * descSpacing, 380 * (textSplit2[N].length / 40), "#ffffff", undefined, 20,);
 				i++;
 			}
 			// Next button
-			DrawButtonVis(KDModalArea_x + 613, KDModalArea_y + 25, 112, 60, TextGet("KinkyDungeonCommerceNext"), "White", "", "");
+			//DrawButtonVis(KDModalArea_x + 613, KDModalArea_y + 25, 112, 60, TextGet("KinkyDungeonCommerceNext"), "White", "", "");
+
+			KDModalArea_y = 700 - shopHeight;
+			KDModalArea_height = shopHeight + 100;
 		}
 	} else {
 		DrawButtonKDEx("shrineUse", (bdata) => {
@@ -417,7 +443,7 @@ function KDSummonRevengeMobs(x, y, Goddess, mult = 1.0, LevelBoost = 2) {
  * @returns {boolean}
  */
 function KDCanDrinkShrine(Bottle) {
-	if (Bottle && KinkyDungeonIsHandsBound(true, true)) return false;
+	if (Bottle && KinkyDungeonIsHandsBound(true, true, 0.9)) return false;
 	return !KinkyDungeonTargetTile.drunk && (Bottle || KinkyDungeonStatMana < KinkyDungeonStatManaMax || KinkyDungeonStatManaPool < KinkyDungeonStatManaPoolMax || KinkyDungeonPlayerTags.get("slime"));
 }
 
@@ -541,6 +567,8 @@ function KinkyDungeonDrawOrb() {
 			}
 			DrawButtonVis(canvasOffsetX_ui + XX, yPad + canvasOffsetY_ui + spacing * i - 27, 250, 55, TextGet("KinkyDungeonShrine" + shrine), "white");
 			DrawProgressBar(canvasOffsetX_ui + 275 + XX, yPad + canvasOffsetY_ui + spacing * i - spacing/4, 200, spacing/2, 50 + value, color, KDTextGray2);
+			if (KinkyDungeonShrineBaseCosts[shrine])
+				KDDrawRestraintBonus(shrine, canvasOffsetX_ui + 275 + XX - 70, yPad + canvasOffsetY_ui + spacing * i, undefined, 24);
 
 			i++;
 		}
@@ -624,6 +652,13 @@ function KinkyDungeonHandleOrb() {
 
 				if (spell) {
 					KinkyDungeonSpells.push(spell);
+					if (spell.autoLearn) {
+						for (let sp of spell.autoLearn) {
+							if (KinkyDungeonSpellIndex(sp) < 0) {
+								KinkyDungeonSpells.push(KinkyDungeonFindSpell(sp, true));
+							}
+						}
+					}
 					KinkyDungeonSendActionMessage(10, TextGet("KinkyDungeonOrbSpell").replace("SPELL", TextGet("KinkyDungeonSpell" + spell.name)), "lightblue", 2);
 				}
 			} else {
@@ -644,7 +679,7 @@ let KDPerkConfirm = false;
 let KDPerkOrbPerks = [];
 function KinkyDungeonTakePerk(Amount, X, Y) {
 	KinkyDungeonSetFlag("NoDialogue", 3);
-	KDPerkOrbPerks = KinkyDungeonTiles.get(X + "," + Y).Perks;
+	KDPerkOrbPerks = KinkyDungeonTilesGet(X + "," + Y).Perks;
 	KinkyDungeonDrawState = "PerkOrb";
 	KinkyDungeonOrbAmount = Amount;
 	KDOrbX = X;
@@ -696,4 +731,22 @@ function KinkyDungeonDrawPerkOrb() {
 	}, true, 1250 - bwidth/2, 750 + 80, bwidth, bheight, TextGet("KinkyDungeonPerkReject"), "#ffffff");
 
 	MainCanvas.textAlign = "center";
+}
+
+function KDGetPosNegColor(value) {
+	return (value ? (value > 0 ? KDGoodColor : KDCurseColor) : "#dddddd");
+}
+
+function KDGetGoddessBonus(shrine) {
+	if (KinkyDungeonGoddessRep[shrine]) {
+		return KinkyDungeonGoddessRep[shrine] / 50 * (KinkyDungeonGoddessRep[shrine] > 0 ? KDMaxGoddessBonus : KDMinGoddessBonus);
+	}
+	return 0;
+}
+
+function KDDrawRestraintBonus(shrine, x, y, width = 100, FontSize, align, zIndex, alpha, forceColor) {
+	let bonus = KDGetGoddessBonus(shrine);
+	let color = forceColor ? forceColor : KDGetPosNegColor(bonus);
+	let str = (bonus >= 0 ? "+" : "") + Math.round(bonus * 100) + "%";
+	DrawTextFitKD(str, x, y, width, color, "#000000", FontSize, align, zIndex, alpha);
 }

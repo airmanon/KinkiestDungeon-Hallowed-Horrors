@@ -43,11 +43,13 @@ let KDQuests = {
 		name: "ApprenticeQuest",
 		npc: "ApprenticeQuest",
 		worldgenstart: () => {
-			if (KDGameData.RoomType == "" && !KinkyDungeonBossFloor(MiniGameKinkyDungeonLevel)) {
+			if (KDGameData.RoomType == "" && !KinkyDungeonBossFloor(MiniGameKinkyDungeonLevel) && !KinkyDungeonFlags.get("ApprenticeQuestSpawn")) {
 				let point = KinkyDungeonGetRandomEnemyPoint(true);
 				if (point) {
 					KinkyDungeonSummonEnemy(point.x, point.y, "Librarian", 1, 2.9);
 				}
+				KinkyDungeonSetFlag("ApprenticeQuestSpawn", -1);
+
 			}
 		},
 		weight: (RoomType, MapMod, data) => {
@@ -64,6 +66,9 @@ let KDQuests = {
 				return weight;
 			}
 			return 0;
+		},
+		accept: (data) => {
+			KinkyDungeonSetFlag("ApprenticeQuestSpawn", 0);
 		},
 		prerequisite: (RoomType, MapMod, data) => {
 			if (KDHasQuest("ApprenticeQuest") && !(KinkyDungeonInventoryGet("ScrollLegs")
@@ -95,6 +100,7 @@ let KDQuests = {
 				if (point) {
 					KinkyDungeonSummonEnemy(point.x, point.y, "DragonLeaderDuelist", 1, 2.9);
 				}
+				KDRemoveQuest("DragonheartQuest"); // Only lasts 1 floor
 			}
 		},
 		prerequisite: (RoomType, MapMod, data) => {
@@ -128,7 +134,7 @@ let KDQuests = {
 						if (epoint) {
 							let ee = DialogueCreateEnemy(point.x, point.y, e.name);
 							if (ee) {
-								ee.faction = "Rebel";
+								ee.faction = "Delinquent";
 								ee.factionrep = {"Maidforce": 0.01};
 								ee.AI = "looseguard";
 							}
@@ -159,6 +165,46 @@ let KDQuests = {
 			if (RoomType == "Tunnel") {
 				return true;
 			}
+			return false;
+		}
+	},
+	"WolfgirlHunters": {
+		name: "WolfgirlHunters",
+		npc: "MaidforceQuest",
+		weight: (RoomType, MapMod, data) => {
+			return 0;
+		},
+		worldgenstart: () => {
+			if (KDGameData.RoomType == "" && !KinkyDungeonBossFloor(MiniGameKinkyDungeonLevel)) {
+				let point = KinkyDungeonGetRandomEnemyPoint(true);
+				if (point) {
+					let e = KinkyDungeonGetEnemy(["wolfgirl", "miniboss"], MiniGameKinkyDungeonLevel + 2, KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint], '0', ["wolfgirl", "miniboss"], false, {"wolfgirl": {mult: 4, bonus: 10}});
+					if (e) {
+						let epoint = KinkyDungeonGetNearbyPoint(point.x, point.y, true, undefined, false);
+						if (epoint) {
+							let ee = DialogueCreateEnemy(point.x, point.y, e.name);
+							if (ee) {
+								ee.faction = "Wolfhunter";
+								ee.AI = "looseguard";
+							}
+						}
+					}
+					let count = 3 + KDRandom() * Math.min(4, KinkyDungeonDifficulty / 20);
+					for (let i = 0; i < count; i++) {
+						e = KinkyDungeonGetEnemy(["nevermere"], MiniGameKinkyDungeonLevel + 2, KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint], '0', ["nevermere"], false, {"wolfgirl": {mult: 4, bonus: 10}}, ["miniboss", "boss"]);
+						let epoint = KinkyDungeonGetNearbyPoint(point.x, point.y, true, undefined, false);
+						if (epoint) {
+							let ee = DialogueCreateEnemy(point.x, point.y, e.name);
+							if (ee) {
+								ee.faction = "Wolfhunter";
+								ee.AI = "looseguard";
+							}
+						}
+					}
+				}
+			}
+		},
+		prerequisite: (RoomType, MapMod, data) => {
 			return false;
 		}
 	},
@@ -255,8 +301,12 @@ function KDRemoveQuest(quest) {
 }
 function KDAddQuest(quest) {
 	if (!KDGameData.Quests) KDGameData.Quests = [];
-	if (!KDGameData.Quests.includes(quest))
+	if (!KDGameData.Quests.includes(quest)) {
+		if (KDQuests[quest]?.accept) {
+			KDQuests[quest].accept();
+		}
 		KDGameData.Quests.push(quest);
+	}
 }
 
 function KDHasQuest(quest) {

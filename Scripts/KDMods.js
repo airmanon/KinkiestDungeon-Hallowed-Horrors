@@ -11,11 +11,11 @@ function KDDrawMods() {
 	let count = 0;
 	let keys = Object.keys(KDMods);
 	for (let i = KDModIndex; i < keys.length && count < KDModCount; i++) {
-		DrawTextKD(keys[i], 975, 370 + KDModSpacing, "#ffffff", KDTextGray2);
+		DrawTextKD(keys[i], 975, 370 + KDModSpacing * count, "#ffffff", KDTextGray2);
 		DrawButtonKDEx("moddelete_" + i, (bdata) => {
 			delete KDMods[keys[i]];
 			return true;
-		}, true, 1275, 350 + KDModSpacing, 200, 45, TextGet("KinkyDungeonDeleteMod"), "#ffffff", "");
+		}, true, 1275, 350 + KDModSpacing * count, 200, 45, TextGet("KinkyDungeonDeleteMod"), "#ffffff", "");
 		count++;
 	}
 }
@@ -38,8 +38,6 @@ function KDLoadMod(files) {
 		}
 	}
 }
-
-let KDAllModFiles = [];
 
 async function KDExecuteMods() {
 	KDAllModFiles = [];
@@ -74,7 +72,7 @@ async function KDExecuteMods() {
 		console.log(blob);
 		let reader = new FileReader();
 
-		if (entry.filename.endsWith('.js')) {
+		if (entry.filename.endsWith('.js') || entry.filename.endsWith('.ks')) {
 			let file = new File([blob], entry.filename);
 			// Eval js files. eval() is dangerous. Don't load untrusted mods.
 			reader.onload = function(event) {
@@ -87,24 +85,20 @@ async function KDExecuteMods() {
 		} else {
 			KDModFiles[KinkyDungeonRootDirectory + entry.filename] = URL.createObjectURL(blob);
 			KDModFiles[KinkyDungeonRootDirectory + "/" + entry.filename] = KDModFiles[KinkyDungeonRootDirectory + entry.filename];
+
+			if (entry.filename?.startsWith("Data/")) KDModFiles["Data/" + entry.filename] = URL.createObjectURL(blob);
+			if (entry.filename?.startsWith("Music/")) KDModFiles["Music/" + entry.filename] = URL.createObjectURL(blob);
 		}
 
 	}
 
 	if (KDAllModFiles.length > 0)
 		KDModsLoaded = true;
+
+	KinkyDungeonRefreshRestraintsCache();
+	KinkyDungeonRefreshEnemiesCache();
 }
 
-let KDModFiles = {};
-
-
-
-function addTextKey(Name, Text) {
-	for (let screen of TextAllScreenCache.entries())
-		if (screen[0].includes("KinkyDungeon")) {
-			screen[1].cache[Name] = Text;
-		} else console.log("ERROR LOADING TEXT!!!");
-}
 
 if (typeof TransformStream == "undefined") {
 	const script = document.createElement("script");
