@@ -2,7 +2,7 @@
 
 /**
  *
- * @param {item} item
+ * @param {Named} item
  * @returns {consumable}
  */
 function KDConsumable(item) {
@@ -50,7 +50,7 @@ function KinkyDungeonItemCount(Name) {
 	return 0;
 }
 
-function KinkyDungeonGetShopItem(Level, Rarity, Shop) {
+function KinkyDungeonGetShopItem(Level, Rarity, Shop, ShopItems) {
 	let Table = [];
 	let params = KinkyDungeonMapParams[KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint]];
 	if (params.ShopExclusives) {
@@ -58,41 +58,46 @@ function KinkyDungeonGetShopItem(Level, Rarity, Shop) {
 			Table.push(exc);
 		}
 	}
+	if (KinkyDungeonStatsChoice.get('arousalMode')) {
+		if (params.ShopExclusivesArousal) {
+			for (let exc of params.ShopExclusivesArousal) {
+				Table.push(exc);
+			}
+		}
+	}
 	/**@type {Record<string, any>} */
 	let Shopable = Object.entries(KinkyDungeonConsumables).filter(([k, v]) => (v.shop));
 	for (let S = 0; S < Shopable.length; S++) {
 		let s = Shopable[S][1];
-		s.shoptype = "Consumable";
-		Table.push(s);
+		s.shoptype = Consumable;
+		if ((KinkyDungeonStatsChoice.get('arousalMode') || !KinkyDungeonConsumables[s.name].arousalMode))
+			Table.push(s);
 	}
-	// @ts-ignore
 	Shopable = Object.entries(KinkyDungneonBasic).filter(([k, v]) => (v.shop));
 	for (let S = 0; S < Shopable.length; S++) {
 		let s = Shopable[S][1];
-		s.shoptype = "Basic";
-		if (!s.ignoreInventory || !KinkyDungeonInventoryGet(s.ignoreInventory))
+		s.shoptype = "basic";
+		if ((!s.ignoreInventory || !KinkyDungeonInventoryGet(s.ignoreInventory)) && (KinkyDungeonStatsChoice.get('arousalMode') || !s.arousalMode))
 			Table.push(s);
 	}
-	// @ts-ignore
 	Shopable = Object.entries(KinkyDungneonShopRestraints).filter(([k, v]) => (v.shop));
 	for (let S = 0; S < Shopable.length; S++) {
 		let s = Shopable[S][1];
-		s.shoptype = "Restraint";
-		if (!KinkyDungeonInventoryGet(s.name))
+		s.shoptype = LooseRestraint;
+		if (!KinkyDungeonInventoryGet(s.name) && (KinkyDungeonStatsChoice.get('arousalMode') || !s.arousalMode))
 			Table.push(s);
 	}
-	// @ts-ignore
 	Shopable = Object.entries(KinkyDungeonWeapons).filter(([k, v]) => (v.shop));
 	for (let S = 0; S < Shopable.length; S++) {
 		let s = Shopable[S][1];
-		s.shoptype = "Weapon";
-		if (!KinkyDungeonInventoryGet(s.name))
+		s.shoptype = Weapon;
+		if (!KinkyDungeonInventoryGet(s.name) && (KinkyDungeonStatsChoice.get('arousalMode') || !KinkyDungeonWeapons[s.name].arousalMode))
 			Table.push(s);
 	}
 
 	// No duplicates
 	for (let R = Rarity; R >= 0; R--) {
-		let available = Table.filter((item) => (item.rarity == R && !KDGameData.ShopItems.some((item2) => {return item2.name == item.name;})));
+		let available = Table.filter((item) => (item.rarity == R && !ShopItems.some((item2) => {return item2.name == item.name;})));
 		if (available.length > 0) return available[Math.floor(KDRandom() * available.length)];
 	}
 	return null;
@@ -135,11 +140,12 @@ function KinkyDungeonConsumableEffect(Consumable, type) {
 		KinkyDungeonTargetingSpell = KinkyDungeonFindSpell(Consumable.spell, true);
 		KinkyDungeonTargetingSpellItem = Consumable;
 	} else if (type == "charge") {
-		KDGameData.AncientEnergyLevel = Math.min(Math.max(0, KDGameData.AncientEnergyLevel + Consumable.amount), 1.0);
+		KinkyDungeonChangeCharge(Consumable.amount);
+		//KDGameData.AncientEnergyLevel = Math.min(Math.max(0, KDGameData.AncientEnergyLevel + Consumable.amount), 1.0);
 		if (!KinkyDungeonStatsChoice.get("LostTechnology"))
 			KinkyDungeonChangeConsumable(KinkyDungeonConsumables.AncientPowerSourceSpent, 1);
 	} else if (type == "buff") {
-		KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {id: Consumable.name, type: Consumable.buff, power: Consumable.power, duration: Consumable.duration, aura: Consumable.aura});
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {id: Consumable.name, type: Consumable.buff, power: Consumable.power, duration: Consumable.duration, aura: Consumable.aura});
 	} else if (type == "recharge") {
 		//KinkyDungeonChangeConsumable(KinkyDungeonConsumables.AncientPowerSource, 1);
 		//KinkyDungeonAddGold(-Consumable.rechargeCost);
@@ -175,8 +181,8 @@ function KinkyDungeonAttemptConsumable(Name, Quantity) {
 	if (!item) return false;
 
 
-	if (KDConsumable(item).prereq && KDConsumablePrereq[KDConsumable(item).prereq]) {
-		if (KDConsumablePrereq[KDConsumable(item).prereq](item, Quantity)) {
+	if (KDConsumable(item.item).prereq && KDConsumablePrereq[KDConsumable(item.item).prereq]) {
+		if (KDConsumablePrereq[KDConsumable(item.item).prereq](item.item, Quantity)) {
 			KinkyDungeonUseConsumable(Name, Quantity);
 			return true;
 		} else return false;
@@ -225,7 +231,7 @@ function KinkyDungeonAttemptConsumable(Name, Quantity) {
 			return false;
 		}
 	}
-	if (!(KinkyDungeonHasGhostHelp() || KinkyDungeonHasAllyHelp()) && needArms && !KinkyDungeonStatsChoice.get("Psychic") && !(item.item && KDConsumable(item.item).potion && !KinkyDungeonIsArmsBound() && (!KinkyDungeonStatsChoice.has("WeakGrip") || !KinkyDungeonIsHandsBound(false, false))) && (KinkyDungeonIsHandsBound(false, true) || (KinkyDungeonStatsChoice.has("WeakGrip") && item.item && KDConsumable(item.item).potion)) && !KinkyDungeonCanUseFeet()) {
+	if (!(KinkyDungeonHasHelp()) && needArms && !KinkyDungeonStatsChoice.get("Psychic") && !(item.item && KDConsumable(item.item).potion && !KinkyDungeonIsArmsBound() && (!KinkyDungeonStatsChoice.has("WeakGrip") || !KinkyDungeonIsHandsBound(false, false))) && (KinkyDungeonIsHandsBound(false, true) || (KinkyDungeonStatsChoice.has("WeakGrip") && item.item && KDConsumable(item.item).potion)) && !KinkyDungeonCanUseFeet()) {
 		let allowPotions = KinkyDungeonPotionCollar();
 		let nohands = KinkyDungeonIsHandsBound(false, true);
 		if (KDConsumable(item.item).potion && allowPotions) {
@@ -261,8 +267,8 @@ function KinkyDungeonAttemptConsumable(Name, Quantity) {
 		return false;
 	}
 
-	if (KDConsumable(item).postreq && KDConsumablePrereq[KDConsumable(item).postreq]) {
-		if (KDConsumablePrereq[KDConsumable(item).postreq](item, Quantity)) {
+	if (KDConsumable(item.item).postreq && KDConsumablePrereq[KDConsumable(item.item).postreq]) {
+		if (KDConsumablePrereq[KDConsumable(item.item).postreq](item.item, Quantity)) {
 			KDDelayedActionPrune(["Action", "Consume"]);
 			if (KDConsumable(item.item).delay || (KDConsumable(item.item).potion && KinkyDungeonStatsChoice.has("SavourTheTaste"))) {
 				KDAddDelayedAction({
@@ -312,7 +318,7 @@ function KinkyDungeonUseConsumable(Name, Quantity) {
 
 	KinkyDungeonSendActionMessage(9, TextGet("KinkyDungeonInventoryItem" + Name + "Use"), "#88FF88", 1);
 	if (KDConsumable(item.item).sfx) {
-		if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/" + KDConsumable(item.item).sfx + ".ogg");
+		if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "Audio/" + KDConsumable(item.item).sfx + ".ogg");
 	}
 	return true;
 }

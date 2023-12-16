@@ -39,6 +39,11 @@ let KDVibeSound = {
 };
 
 
+let KDResolutionConfirm = false;
+let KDResolution = 1;
+let KDResolutionListIndex = 0;
+let KDResolutionList = [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0];
+
 let KDVibeVolume = 1;
 let KDVibeVolumeListIndex = 0;
 let KDVibeVolumeList = [1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
@@ -55,6 +60,10 @@ let KDSfxVolumeList = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 0, 0.1, 0.2];
 let KDAnimSpeed = 1;
 let KDAnimSpeedListIndex = 0;
 let KDAnimSpeedList = [1, 1.25, 1.5, 2.0, 0, 0.25, 0.5, 0.75,];
+
+let KDGamma = 1;
+let KDGammaListIndex = 0;
+let KDGammaList = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, .6, .7, .8, .9];
 
 function KDStopAllVibeSounds(Exceptions) {
 	let EE = [];
@@ -100,10 +109,9 @@ function KDUpdateVibeSound(Location, Sound, Volume) {
 			if (KDVibeSounds[Location].vol) vol *= KDVibeSounds[Location].vol;
 			KDVibeSounds[Location].Audio = audio;
 			KDVibeSounds[Location].update = true;
-			if (ServerURL == 'foobar') {
+			if (KDPatched) {
 				audio.crossOrigin = "Anonymous";
-				// @ts-ignore
-				audio.src = remap(Sound);
+				audio.src = Sound;
 			} else
 				audio.src = KDModFiles[Sound] || Sound;
 			audio.volume = Math.min(vol, 1);
@@ -149,8 +157,10 @@ function KDUpdateVibeSounds() {
 				power = "Off";
 			}
 			if (power != "Off") {
-				let sound = (KDVibeSoundRedirect[location] && KDVibeSound[KDVibeSoundRedirect[location]]) ? KDVibeSound[KDVibeSoundRedirect[location]] : "Vibe1";
-				KDUpdateVibeSound(KDVibeSoundRedirect[location] ? KDVibeSoundRedirect[location] : "ItemVulva", KinkyDungeonRootDirectory + `Audio/${sound}_${power}.ogg`, globalVolume);
+				if (vibe.location.length > 0 && vibe.location[0] == location) {
+					let sound = (KDVibeSoundRedirect[location] && KDVibeSound[KDVibeSoundRedirect[location]]) ? KDVibeSound[KDVibeSoundRedirect[location]] : "Vibe1";
+					KDUpdateVibeSound(KDVibeSoundRedirect[location] ? KDVibeSoundRedirect[location] : "ItemVulva", KinkyDungeonRootDirectory + `Audio/${sound}_${power}.ogg`, globalVolume);
+				}
 			} else
 				KDUpdateVibeSound(KDVibeSoundRedirect[location] ? KDVibeSoundRedirect[location] : "ItemVulva", "", globalVolume);
 		}
@@ -213,7 +223,10 @@ function KDGetVibeLocation(item) {
  */
 function KinkyDungeonStartVibration(source, name, locations, intensity, duration, numLoops, denyTime, denialsLeft, edgeTime, edgeOnly, alwaysDeny, denialChance, denialChanceLikely, tickEdgeAtMaxArousal, vibeMods) {
 	if (KDGameData.CurrentVibration) {
+		KinkyDungeonSetFlag("VibeContinued", 3);
 		if (!KinkyDungeonSendTextMessage(4, TextGet("KinkyDungeonStartVibeContinue"), "#FFaadd", 2)) KinkyDungeonSendActionMessage(2, TextGet("KinkyDungeonStartVibeContinue"), "#FFaadd", 2, true, true);
+	} else {
+		KinkyDungeonSetFlag("VibeStarted", 8);
 	}
 	KDGameData.CurrentVibration = {
 		source: source,
@@ -330,15 +343,19 @@ function KinkyDungeonCalculateVibeLevel(delta) {
 	KinkyDungeonOrgasmVibeLevel = 0;
 	KinkyDungeonStatPlugLevel = 0;
 	KinkyDungeonPlugCount = 0;
+	let sumplug = 0;
 	for (let item of KinkyDungeonAllRestraint()) {
 		if (item && KDRestraint(item)) {
 			if (KDRestraint(item).plugSize) {
 				let size = KDRestraint(item).plugSize;
-				KinkyDungeonStatPlugLevel = Math.max(KinkyDungeonStatPlugLevel + size/2, size);
+				sumplug += size/2;
+				KinkyDungeonStatPlugLevel = Math.max(KinkyDungeonStatPlugLevel, size);
 				KinkyDungeonPlugCount += 1;
 			}
 		}
 	}
+	sumplug += KinkyDungeonStatPlugLevel/2;
+	if (sumplug > KinkyDungeonStatPlugLevel) KinkyDungeonStatPlugLevel = sumplug;
 
 	KDGameData.Edged = false;
 	let cease = true;

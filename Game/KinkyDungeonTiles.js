@@ -1,5 +1,17 @@
 "use strict";
 
+let KDAdvanceAmount = {
+	'S': (altRoom, altRoomPrevious) => { // Stairs up
+		return (altRoomPrevious?.skiptunnel ? -1 : 0);
+	},
+	's': (altRoom, altRoomPrevious) => { // Stairs down
+		return (altRoom?.skiptunnel ? 1 : 0);
+	},
+	'H': (altRoom, altRoomPrevious) => { // Stairs down
+		return 0;
+	},
+};
+
 /**
  *
  * @param {entity} entity
@@ -31,9 +43,9 @@ function KinkyDungeonHandleTilesEnemy(enemy, delta) {
 			let b3 = Object.assign({}, KDDrenched3);
 			b3.duration = 6;
 
-			KinkyDungeonApplyBuff(enemy.buffs, b1);
-			KinkyDungeonApplyBuff(enemy.buffs, b2);
-			KinkyDungeonApplyBuff(enemy.buffs, b3);
+			KinkyDungeonApplyBuffToEntity(enemy, b1);
+			KinkyDungeonApplyBuffToEntity(enemy, b2);
+			KinkyDungeonApplyBuffToEntity(enemy, b3);
 		}
 		*/
 	}
@@ -68,8 +80,8 @@ function KinkyDungeonUpdateTileEffects(delta) {
 	} else {
 		KDPeripheralTileEffects(delta);
 	}
-	for (let X = 1; X < KinkyDungeonGridWidth-1; X++) {
-		for (let Y = 1; Y < KinkyDungeonGridHeight-1; Y++) {
+	for (let X = 1; X < KDMapData.GridWidth-1; X++) {
+		for (let Y = 1; Y < KDMapData.GridHeight-1; Y++) {
 			let tt = KinkyDungeonMapGet(X, Y);
 			if (KDTileUpdateFunctionsLocal[tt]) KDTileUpdateFunctionsLocal[tt](delta, X, Y);
 
@@ -81,7 +93,12 @@ function KinkyDungeonUpdateTileEffects(delta) {
 let KinkyDungeonChestConfirm = false;
 
 function KinkyDungeonHandleMoveToTile(toTile) {
-	if (toTile == 's' || toTile == 'H') { // Go down the next stairs
+	if (toTile == 's' || toTile == 'H' || (toTile == 'S' && (
+		MiniGameKinkyDungeonLevel > 0
+		//|| (MiniGameKinkyDungeonLevel == 1 && KDGameData.RoomType)
+		//|| KinkyDungeonTilesGet(KinkyDungeonPlayerEntity.x + "," + KinkyDungeonPlayerEntity.y)?.AltStairAction
+		//|| KinkyDungeonTilesGet(KinkyDungeonPlayerEntity.x + "," + KinkyDungeonPlayerEntity.y)?.RoomType
+	))) { // Go down the next stairs
 		if (KinkyDungeonConfirmStairs && KinkyDungeonLastAction == "Wait") {
 			KinkyDungeonConfirmStairs = false;
 			KinkyDungeonHandleStairs(toTile);
@@ -120,20 +137,39 @@ function KDEffectTileTags(x, y) {
 	return ret;
 }
 
+
+
 function KinkyDungeonHandleStairs(toTile, suppressCheckPoint) {
 	if (!KDCanEscape()) {
 		KinkyDungeonSendActionMessage(10, TextGet("KinkyDungeonNeedJailKey"), "#ffffff", 1);
 	}
+	else if (KinkyDungeonTilesGet(KinkyDungeonPlayerEntity.x + "," + KinkyDungeonPlayerEntity.y)?.AltStairAction) {
+		KDStairsAltAction[KinkyDungeonTilesGet(KinkyDungeonPlayerEntity.x + "," + KinkyDungeonPlayerEntity.y).AltStairAction](toTile, suppressCheckPoint);
+	}
 	else {
 		if (!KinkyDungeonJailGuard() || !KinkyDungeonTetherLength() || (!(KDistEuclidean(KinkyDungeonJailGuard().x - KinkyDungeonPlayerEntity.x, KinkyDungeonJailGuard().y - KinkyDungeonPlayerEntity.y) <= KinkyDungeonTetherLength() + 2))) {
 
+			let tile = KinkyDungeonTilesGet(KinkyDungeonPlayerEntity.x + "," + KinkyDungeonPlayerEntity.y);
+			let roomType = "";
+			let currCheckpoint = MiniGameKinkyDungeonCheckpoint;
+			let originalRoom = KDGameData.RoomType;
+			let altRoom = KinkyDungeonAltFloor(KDGameData.RoomType);
+			let altRoomTarget = (tile && tile.RoomType) ? KinkyDungeonAltFloor(tile.RoomType) : undefined;
+			let AdvanceAmount = KDAdvanceAmount[toTile](altRoom, altRoomTarget);
+
 			let data = {
+				altRoom: altRoom,
+				altRoomTarget: altRoomTarget,
+				tile: tile,
+				AdvanceAmount: AdvanceAmount,
+				Xdelta: toTile != 'H' ? (tile?.Xdelta || 0) : (tile?.Xdelta || 0), // TODO allow maneuvering around the world map
 				toTile: toTile,
 				overrideRoomType: false,
 				overrideProgression: false,
 				overrideJourney: false,
 				mapMod: KinkyDungeonTilesGet(KinkyDungeonPlayerEntity.x + "," + KinkyDungeonPlayerEntity.y)?.MapMod,
 			};
+			if (altRoom?.onExit) altRoom.onExit(data); // Handle any special contitions
 			KinkyDungeonSendEvent("beforeHandleStairs", data);
 
 			if (MiniGameKinkyDungeonLevel > Math.max(KinkyDungeonRep, ReputationGet("Gaming")) || Math.max(KinkyDungeonRep, ReputationGet("Gaming")) > KinkyDungeonMaxLevel) {
@@ -141,14 +177,11 @@ function KinkyDungeonHandleStairs(toTile, suppressCheckPoint) {
 				DialogSetReputation("Gaming", KinkyDungeonRep);
 			}
 			MiniGameVictory = false;
-			let roomType = "";
-			let currCheckpoint = MiniGameKinkyDungeonCheckpoint;
-			let altRoom = KinkyDungeonAltFloor(KDGameData.RoomType);
 
+			let newLocation = KDAdvanceLevel(data); // Advance anyway
 			// We increment the save, etc, after the tunnel
-			if (KDGameData.RoomType == "Tunnel" || (altRoom && altRoom.skiptunnel)) {
+			if (MiniGameKinkyDungeonLevel > KDGameData.HighestLevelCurrent) {
 				if (!data.overrideProgression) {
-					MiniGameKinkyDungeonLevel += 1;
 					if (KDGameData.PriorJailbreaks > 0) KDGameData.PriorJailbreaksDecay = (KDGameData.PriorJailbreaksDecay + 1) || 1;
 
 					if (MiniGameKinkyDungeonLevel > 1) {
@@ -172,7 +205,7 @@ function KinkyDungeonHandleStairs(toTile, suppressCheckPoint) {
 
 					if (MiniGameKinkyDungeonLevel >= KinkyDungeonMaxLevel) {
 						MiniGameKinkyDungeonLevel = 1;
-						KDGameData.MainPath = "grv";
+						KDMapData.MainPath = "grv";
 						KinkyDungeonState = "End";
 						MiniGameVictory = true;
 						suppressCheckPoint = true;
@@ -186,11 +219,16 @@ function KinkyDungeonHandleStairs(toTile, suppressCheckPoint) {
 					}
 				}
 			} else {
-				if (!data.overrideRoomType) {
-					roomType = "PerkRoom"; // We do a perk room, then a tunnel
+				if (tile?.RoomType != undefined) {
+					roomType = tile.RoomType;
+					KDGameData.MapMod = ""; // Reset the map mod
+				} else if (!data.overrideRoomType) {
+					roomType = (altRoom?.skiptunnel) ? "" : "PerkRoom"; // We do a perk room, then a tunnel
 					KDGameData.MapMod = ""; // Reset the map mod
 				}
 			}
+			KDGameData.HighestLevelCurrent = Math.max(KDGameData.HighestLevelCurrent || 1, MiniGameKinkyDungeonLevel);
+			KDGameData.HighestLevel = Math.max(KDGameData.HighestLevel || 1, MiniGameKinkyDungeonLevel);
 
 
 			if (!data.overrideRoomType) {
@@ -200,10 +238,10 @@ function KinkyDungeonHandleStairs(toTile, suppressCheckPoint) {
 				let MapMod = data.mapMod;
 				if (MapMod) {
 					KDGameData.MapMod = MapMod;
-					KDGameData.MapFaction = KDMapMods[KDGameData.MapMod].faction;
+					KDMapData.MapFaction = KDMapMods[KDGameData.MapMod].faction;
 				} else {
 					KDGameData.MapMod = "";
-					KDGameData.MapFaction = "";
+					KDMapData.MapFaction = "";
 				}
 
 				if (!data.overrideJourney) {
@@ -223,12 +261,11 @@ function KinkyDungeonHandleStairs(toTile, suppressCheckPoint) {
 			}
 
 
+			KinkyDungeonSendActionMessage(10, TextGet("ClimbDown" + toTile), "#ffffff", 1);
 			if (toTile == 's') {
-				KinkyDungeonSendActionMessage(10, TextGet("ClimbDown"), "#ffffff", 1);
-				KinkyDungeonSetCheckPoint(KDGameData.MainPath, true, suppressCheckPoint);
+				KinkyDungeonSetCheckPoint(KDMapData.MainPath, true, suppressCheckPoint);
 			} else if (toTile == 'H') {
-				KinkyDungeonSendActionMessage(10, TextGet("ClimbDownShortcut"), "#ffffff", 1);
-				KinkyDungeonSetCheckPoint(KDGameData.ShortcutPath, true, suppressCheckPoint);
+				KinkyDungeonSetCheckPoint(KDMapData.ShortcutPath, true, suppressCheckPoint);
 			}
 
 			if (KinkyDungeonState != "End") {
@@ -236,7 +273,14 @@ function KinkyDungeonHandleStairs(toTile, suppressCheckPoint) {
 					toTile: toTile,
 				});
 				KDGameData.HeartTaken = false;
-				KinkyDungeonCreateMap(KinkyDungeonMapParams[KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint]], MiniGameKinkyDungeonLevel, undefined, undefined);
+				KinkyDungeonCreateMap(KinkyDungeonMapParams[altRoom?.useGenParams ? altRoom.useGenParams : KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint]], KDGameData.RoomType, KDGameData.MapMod, MiniGameKinkyDungeonLevel, undefined, undefined,
+					undefined, newLocation, !altRoomTarget || !altRoomTarget.alwaysRegen, altRoom?.persist ? originalRoom : (KDGetWorldMapLocation(newLocation)?.main || ""),
+					AdvanceAmount > 0
+						? (toTile == 'H' ? 2 : 0)
+						: (toTile == 'S' ? 1 : 0));
+
+				if (altRoom?.afterExit) altRoom.afterExit(data); // Handle any special contitions
+				KinkyDungeonSendEvent("AfterAdvance", data);
 				let saveData = KinkyDungeonSaveGame(true);
 				if (KDGameData.RoomType == "PerkRoom" && MiniGameKinkyDungeonLevel >= 1) { //  && Math.floor(MiniGameKinkyDungeonLevel / 3) == MiniGameKinkyDungeonLevel / 3
 					if ((!KinkyDungeonStatsChoice.get("saveMode")) && !suppressCheckPoint) {
@@ -301,7 +345,7 @@ function KDGetSpecificEffectTile(x, y, tile) {
  * @returns {effectTile}
  */
 function KDCreateEffectTile(x, y, tile, durationMod) {
-	if (x < 1 || y < 1 || x >= KinkyDungeonGridWidth || y >= KinkyDungeonGridHeight) return null;
+	if (x < 0 || y < 0 || x >= KDMapData.GridWidth || y >= KDMapData.GridHeight) return null;
 	let existingTile = KDGetSpecificEffectTile(x, y);
 	let duration = (tile.duration ? tile.duration : KDEffectTiles[tile.name].duration) + KDRandom() * (durationMod ? durationMod : 0);
 	let createdTile = existingTile;
@@ -325,13 +369,13 @@ function KDCreateEffectTile(x, y, tile, durationMod) {
 }
 
 function KDInteractNewTile(newTile) {
-	let Creator = KDEffectTileCreateFunctionsCreator[newTile.name];
+	let Creator = KDEffectTileCreateFunctionsCreator[newTile.functionName || newTile.name];
 	let Existing = null;
 	for (let tile of Object.values(KDGetEffectTiles(newTile.x, newTile.y))) {
 		if (tile != newTile) {
 			if (Creator) Creator(newTile, tile);
 			if (tile.duration > 0) {
-				Existing = KDEffectTileCreateFunctionsExisting[tile.name];
+				Existing = KDEffectTileCreateFunctionsExisting[tile.functionName || tile.name];
 				if (Existing) Existing(newTile, tile);
 			}
 		}
@@ -411,18 +455,24 @@ let KDLastEffTileUpdate = 0;
 function KDDrawEffectTiles(canvasOffsetX, canvasOffsetY, CamX, CamY) {
 	let delta = CommonTime() - KDLastEffTileUpdate;
 	KDLastEffTileUpdate = CommonTime();
-	for (let tileLocation of Object.values(KinkyDungeonEffectTiles)) {
+	for (let tileLocation of Object.values(KDMapData.EffectTiles)) {
 		for (let tile of Object.values(tileLocation)) {
 			let sprite = (tile.pauseDuration > 0 && tile.pauseSprite) ? tile.pauseSprite : (tile.skin ? tile.skin : tile.name);
 			if (tile.x >= CamX && tile.y >= CamY && tile.x < CamX + KinkyDungeonGridWidthDisplay && tile.y < CamY + KinkyDungeonGridHeightDisplay && KinkyDungeonVisionGet(tile.x, tile.y) > 0) {
 				if (!KDCanSeeEffectTile(tile)) continue;
 				let tileid = tile.x + "," + tile.y + "_" + sprite;
-				KDDraw(kdgameboard, kdpixisprites, tileid, KinkyDungeonRootDirectory + "EffectTiles/" + sprite + ".png",
+				let color = undefined;
+				if (tile.tags?.includes("terrain")) {
+					color = KDGetLightColor(tile.x, tile.y);
+				}
+				let op = {
+					zIndex: -0.1 + 0.01 * tile.priority,
+					alpha: KDApplyAlpha(tileid, kdpixisprites.get(tileid)?.alpha, tile.fade, delta),
+				};
+				if (color != undefined) op.tint = color;
+				KDDraw(kdeffecttileboard, kdpixisprites, tileid, KinkyDungeonRootDirectory + "EffectTiles/" + sprite + ".png",
 					(tile.x + (tile.xoffset ? tile.xoffset : 0) - CamX)*KinkyDungeonGridSizeDisplay, (tile.y - CamY + (tile.yoffset ? tile.yoffset : 0))*KinkyDungeonGridSizeDisplay,
-					KinkyDungeonGridSizeDisplay, KinkyDungeonGridSizeDisplay, 0, {
-						zIndex: -0.1 + 0.01 * tile.priority,
-						alpha: KDApplyAlpha(tileid, kdpixisprites.get(tileid)?.alpha, tile.fade, delta),
-					});
+					KinkyDungeonGridSizeDisplay, KinkyDungeonGridSizeDisplay, 0, op);
 			}
 		}
 	}
@@ -448,14 +498,14 @@ function KDUpdateEffectTiles(delta) {
 		if (examinedTile) KinkyDungeonUpdateSingleEffectTile(delta, KinkyDungeonPlayerEntity, examinedTile);
 	}
 
-	for (let enemy of KinkyDungeonEntities) {
+	for (let enemy of KDMapData.Entities) {
 		for (let examinedTile of Object.values(KDGetEffectTiles(enemy.x, enemy.y))) {
 			if (examinedTile) if (examinedTile) KinkyDungeonUpdateSingleEffectTile(delta, enemy, examinedTile);
 		}
 	}
 
 	// Tick them down
-	for (let loc of Object.entries(KinkyDungeonEffectTiles)) {
+	for (let loc of Object.entries(KDMapData.EffectTiles)) {
 		let location = loc[1];
 		for (let t of Object.entries(location)) {
 			if (t[1].pauseDuration > 0) {
@@ -470,7 +520,7 @@ function KDUpdateEffectTiles(delta) {
 			}
 		}
 		if (Object.values(loc[1]).length < 1) {
-			delete KinkyDungeonEffectTiles[loc[0]];
+			delete KDMapData.EffectTiles[loc[0]];
 		}
 	}
 }
@@ -482,8 +532,8 @@ function KDUpdateEffectTiles(delta) {
  * @param {effectTile} tile
  */
 function KinkyDungeonUpdateSingleEffectTile(delta, entity, tile,) {
-	if (tile.duration > 0 && KDEffectTileFunctions[tile.name]) {
-		KDEffectTileFunctions[tile.name](delta, entity, tile);
+	if (tile.duration > 0 && KDEffectTileFunctions[tile.functionName || tile.name]) {
+		KDEffectTileFunctions[tile.functionName || tile.name](delta, entity, tile);
 	}
 }
 /**
@@ -492,8 +542,8 @@ function KinkyDungeonUpdateSingleEffectTile(delta, entity, tile,) {
  * @param {effectTile} tile
  */
 function KinkyDungeonUpdateSingleEffectTileStandalone(delta, tile,) {
-	if (tile.duration > 0 && KDEffectTileFunctionsStandalone[tile.name]) {
-		KDEffectTileFunctionsStandalone[tile.name](delta, tile);
+	if (tile.duration > 0 && KDEffectTileFunctionsStandalone[tile.functionName || tile.name]) {
+		KDEffectTileFunctionsStandalone[tile.functionName || tile.name](delta, tile);
 	}
 }
 
@@ -506,8 +556,8 @@ function KinkyDungeonUpdateSingleEffectTileStandalone(delta, tile,) {
  * @param {number} d
  */
 function KinkyDungeonBulletInteractionSingleEffectTile(b, tile, d) {
-	if (tile.duration > 0 && KDEffectTileBulletFunctions[tile.name]) {
-		KDEffectTileBulletFunctions[tile.name](b, tile, d);
+	if (tile.duration > 0 && KDEffectTileBulletFunctions[tile.functionName]) {
+		KDEffectTileBulletFunctions[tile.functionName](b, tile, d);
 	}
 }
 
@@ -566,7 +616,7 @@ function KDStaggerEnemy(enemy) {
 }
 
 
-function KDMovePlayer(moveX, moveY, willing, sprint, forceHitBullets) {
+function KDMovePlayer(moveX, moveY, willing, sprint, forceHitBullets, suppressNoise) {
 	KinkyDungeonPlayerEntity.lastx = KinkyDungeonPlayerEntity.x;
 	KinkyDungeonPlayerEntity.lasty = KinkyDungeonPlayerEntity.y;
 	let cancel = {cancelmove: false, returnvalue: false};
@@ -576,10 +626,18 @@ function KDMovePlayer(moveX, moveY, willing, sprint, forceHitBullets) {
 		}
 	}
 	if (!cancel.cancelmove) {
+		if (willing) {
+			if (moveX > KinkyDungeonPlayerEntity.x) {
+				KDFlipPlayer = true;
+			} else if (moveX < KinkyDungeonPlayerEntity.x) {
+				KDFlipPlayer = false;
+			}
+		}
 		KinkyDungeonPlayerEntity.x = moveX;
 		KinkyDungeonPlayerEntity.y = moveY;
+
 	}
-	KinkyDungeonSendEvent("playerMove", {
+	let data = {
 		cancelmove: cancel.cancelmove, // If true, cancels the move
 		returnvalue: cancel.returnvalue, // Returns this
 		willing: willing, // True if the player triggers it, false if yoinked by tether
@@ -588,7 +646,13 @@ function KDMovePlayer(moveX, moveY, willing, sprint, forceHitBullets) {
 		lastY: KinkyDungeonPlayerEntity.lasty,
 		moveX: moveX,
 		moveY: moveY,
-	});
+		sound: (sprint && !suppressNoise) ? (4): 0,
+		dist: KDistChebyshev(KinkyDungeonPlayerEntity.lastx - moveX, KinkyDungeonPlayerEntity.lasty - moveY),
+	};
+	KinkyDungeonSendEvent("playerMove", data);
+	if (data.sound > 0) {
+		KinkyDungeonMakeNoise(data.sound, data.moveX, data.moveY);
+	}
 	if (!cancel.cancelmove) {
 		KDCheckCollideableBullets(KinkyDungeonPlayerEntity, forceHitBullets);
 		KinkyDungeonHandleTraps(KinkyDungeonPlayerEntity, KinkyDungeonPlayerEntity.x, KinkyDungeonPlayerEntity.y, KinkyDungeonTrapMoved);
@@ -597,6 +661,7 @@ function KDMovePlayer(moveX, moveY, willing, sprint, forceHitBullets) {
 }
 
 function KDSlip(dir) {
+	KinkyDungeonFastMovePath = [];
 	let maxSlip = 2;
 	let maxReached = 0;
 	for (let i = 0; i < maxSlip; i++) {
@@ -608,7 +673,7 @@ function KDSlip(dir) {
 				|| ((tile.statuses?.frozen || tile.name.includes("Frozen")) && tile.tags?.includes("slipperywhenfrozen"));}))
 			&& KinkyDungeonMovableTilesEnemy.includes(KinkyDungeonMapGet(KinkyDungeonPlayerEntity.x + dir.x, KinkyDungeonPlayerEntity.y + dir.y))
 			&& !KinkyDungeonEnemyAt(KinkyDungeonPlayerEntity.x + dir.x, KinkyDungeonPlayerEntity.y + dir.y)) {
-			KDMovePlayer(KinkyDungeonPlayerEntity.x + dir.x, KinkyDungeonPlayerEntity.y + dir.y, false, true);
+			KDMovePlayer(KinkyDungeonPlayerEntity.x + dir.x, KinkyDungeonPlayerEntity.y + dir.y, false, true, false, true);
 			KinkyDungeonHandleStepOffTraps(KinkyDungeonPlayerEntity, KinkyDungeonPlayerEntity.x, KinkyDungeonPlayerEntity.y, KinkyDungeonPlayerEntity.x + dir.x, KinkyDungeonPlayerEntity.y + dir.y);
 			KinkyDungeonHandleTraps(KinkyDungeonPlayerEntity, KinkyDungeonPlayerEntity.x, KinkyDungeonPlayerEntity.y, true);
 			maxReached = i;
@@ -675,7 +740,7 @@ function KDConveyor(delta, X, Y) {
 				KDMovePlayer(X + (tile.DX || 0), Y + (tile.DY || 0), false, false, true);
 				KinkyDungeonSendTextMessage(4, TextGet("KDConveyorPush"), "#ffff44", 2);
 			}
-		} else if (!KDIsImmobile(entity) && !entity.Enemy.tags.flying && !entity.Enemy.tags.ignoreconveyor && !entity.Enemy.ethereal
+		} else if (!KDIsImmobile(entity) && !KDIsFlying(entity) && !entity.Enemy.tags.ignoreconveyor && !entity.Enemy.ethereal
 			&& !(entity.Enemy.tags.unstoppable || (entity.Enemy.tags.unflinching && !KinkyDungeonIsDisabled(entity)))) {
 			if (entity.Enemy.tags.prisoner) KDStaggerEnemy(entity);
 			if (!KDEnemyHasFlag(entity, "conveyed")) {
@@ -684,4 +749,12 @@ function KDConveyor(delta, X, Y) {
 			}
 		}
 	}
+}
+
+function KDAdvanceLevel(data) {
+	MiniGameKinkyDungeonLevel += data.AdvanceAmount;
+	return {
+		x: KDCurrentWorldSlot.x + data.Xdelta,
+		y: KDCurrentWorldSlot.y + data.AdvanceAmount,
+	};
 }

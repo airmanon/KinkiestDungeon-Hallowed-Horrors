@@ -3,6 +3,51 @@
  * @type {Record<mapKey,floorParams>}
  */
 const KinkyDungeonMapParams = {
+	"menu":{
+		music: {
+			"GENERIC-DOLLRACK.ogg": 4,
+		},
+
+		"background" : "RainyForstPathNight",
+		"openness" : 3, // Openness of rooms
+		"density" : 3, // Density of tunnels (inverse of room spawn chance)
+		"crackchance" : 0.07,
+		"barchance" : 0.2,
+		"brightness" : 7,
+		"chestcount" : 5,
+		"shrinecount" : 16,
+		"shrinechance" : 0.75,
+		"ghostchance" : 1,
+		"doorchance" : 0.67,
+		"nodoorchance" : 0.1,
+		"doorlockchance" : -0.1,
+		"trapchance" : 0.5,
+		"grateChance" : 0.4,
+		"rubblechance" : 0.4,
+		"brickchance" : 0.1,
+		"cacheInterval" : 1,
+		"forbiddenChance" : 0.7, // If a forbidden gold chance is generated. Otherwise a silver chest will appear
+		"forbiddenGreaterChance" : 0.33, // Chance after a forbidden area is generated with a restraint, otherwise its a lesser gold chest
+		"torchchance": 0.35,
+		"torchchanceboring": 1.0,
+
+		tagModifiers: {},
+		enemyTags: [],
+
+		"traps": [],
+		"min_width" : 5,
+		"max_width" : 7,
+		"min_height" : 5,
+		"max_height" : 6,
+		"defeat_outfit": "Prisoner",
+		"shrines": [],
+
+		"setpieces": [],
+
+		"shortcuts": [],
+		"mainpath": [],
+
+	},
 	"grv":{//DungeonName0,-Graveyard-
 		"background" : "RainyForstPathNight",
 		"openness" : 3, // Openness of rooms
@@ -11,7 +56,7 @@ const KinkyDungeonMapParams = {
 		"barchance" : 0.2,
 		"brightness" : 7,
 		"chestcount" : 5,
-		"shrinecount" : 11,
+		"shrinecount" : 16,
 		"shrinechance" : 0.75,
 		"ghostchance" : 1,
 		"doorchance" : 0.67,
@@ -34,6 +79,7 @@ const KinkyDungeonMapParams = {
 
 		tagModifiers: {
 			"temple": 0.4,
+			"library": 0.5,
 			"jungle": 0,
 			"cavern": 0,
 		},
@@ -86,7 +132,7 @@ const KinkyDungeonMapParams = {
 			{Type: "Leather", Weight: 5},
 			{Type: "Metal", Weight: 3},
 			{Type: "Rope", Weight: 2},
-			{Type: "Will", Weight: 7},]
+			{Type: "Will", Weight: 13},]
 
 
 	},
@@ -98,7 +144,7 @@ const KinkyDungeonMapParams = {
 		"barchance" : 0.2,
 		"brightness" : 4,
 		"chestcount" : 7,
-		"shrinecount" : 12,
+		"shrinecount" : 15,
 		"chargerchance": 0.5,
 		"litchargerchance": 0.5,
 		"chargercount": 7,
@@ -118,6 +164,10 @@ const KinkyDungeonMapParams = {
 		torchchance: 0.05,
 		torchchanceboring: 0.7,
 
+		worldGenCode: () => {
+			KDAddPipes(0.1, 0.05, 0.7, 0.05);
+		},
+
 		music: {
 			"GENERIC-DOLLRACK.ogg": 10,
 			"AREA2-ANCIENTTOMBS.ogg": 2,
@@ -129,6 +179,7 @@ const KinkyDungeonMapParams = {
 			"open": 0.5,
 			"jungle": 0,
 			"cavern": 0,
+			"library": 0.25,
 		},
 
 		"setpieces": [
@@ -181,7 +232,7 @@ const KinkyDungeonMapParams = {
 			{Type: "Leather", Weight: 5},
 			{Type: "Metal", Weight: 3},
 			{Type: "Rope", Weight: 2},
-			{Type: "Will", Weight: 7},]
+			{Type: "Will", Weight: 13},]
 
 	},
 	"jng":{//DungeonName2,-Underground Jungle-
@@ -193,7 +244,7 @@ const KinkyDungeonMapParams = {
 		"barchance" : 0.05,
 		"brightness" : 6,
 		"chestcount" : 7,
-		"shrinecount" : 13,
+		"shrinecount" : 14,
 		"shrinechance" : 0.4,
 		"ghostchance" : 0.5,
 		"doorchance" : 0.2,
@@ -209,11 +260,88 @@ const KinkyDungeonMapParams = {
 		torchchance: 0.2,
 		torchchanceboring: 0.25,
 
+		worldGenCode: () => {
+			KDAddPipes(0.03, 0.6, 0.8, 0.1);
+			// List of coordinates that are naturalized
+			let naturalized = {};
+			let cavernized = {};
+			// Start nature near plants, mushrooms, etc
+			for (let x = 0; x < KDMapData.GridWidth-1; x++)
+				for (let y = 0; y < KDMapData.GridHeight-1; y++) {
+					let category = KDMapData.CategoryIndex ? KDGetCategoryIndex(x, y)?.category : "";
+					/*let enemy = KinkyDungeonEnemyAt(x, y);
+					let tile = KinkyDungeonMapGet(x, y);
+					if ((enemy && (enemy.Enemy.faction == "Plant" || enemy.Enemy.faction == "Natural"))
+						|| (tile != '2' && KDRandom() < 0.001)
+						|| (tile == 'X' && KDRandom() < 0.04)) {
+						naturalized[x + ',' + y] = true;
+					}*/
+					if ((category == "jungle" || category == "natural" || category == "garden") && KDRandom() < 0.1) naturalized[x + ',' + y] = true;
+					if (category == "cavern" && KDRandom() < 0.1) cavernized[x + ',' + y] = true;
+				}
+			// dilate a few times
+			let wallchance = 0.1;
+			let wallchanceCav = 0.01;
+			let cavChance = 0.01;
+			for (let i = 6 + 4*KDRandom(); i>0; i--) {
+				for (let x = 0; x < KDMapData.GridWidth-1; x++)
+					for (let y = 0; y < KDMapData.GridHeight-1; y++) {
+
+						let chance = KinkyDungeonMapGet(x, y) == '1' ? wallchance : 0.3;
+						if (KinkyDungeonMapGet(x, y) == '4') chance = 0; // no cracks in plants
+						if (KinkyDungeonMapGet(x, y) == 'X') chance = 1; // plants have guaranteed spread chance if a bordering plant is natural
+						if (!naturalized[x + ',' + y]) {
+							if (naturalized[(x+1) + ',' + (y)] && KDRandom() < chance) {
+								if (KDRandom() < cavChance) cavernized[x + ',' + y] = true;
+								else naturalized[x + ',' + y] = true;
+							} else if (naturalized[(x-1) + ',' + (y)] && KDRandom() < chance) {
+								if (KDRandom() < cavChance) cavernized[x + ',' + y] = true;
+								else naturalized[x + ',' + y] = true;
+							} else if (naturalized[(x) + ',' + (y+1)] && KDRandom() < chance) {
+								if (KDRandom() < cavChance) cavernized[x + ',' + y] = true;
+								else naturalized[x + ',' + y] = true;
+							} else if (naturalized[(x) + ',' + (y-1)] && KDRandom() < chance) {
+								if (KDRandom() < cavChance) cavernized[x + ',' + y] = true;
+								else naturalized[x + ',' + y] = true;
+							}
+						}
+					}
+			}
+			for (let i = 6 + 4*KDRandom(); i>0; i--) {
+				for (let x = 0; x < KDMapData.GridWidth-1; x++)
+					for (let y = 0; y < KDMapData.GridHeight-1; y++) {
+
+						let chance = KinkyDungeonMapGet(x, y) == '1' ? wallchanceCav : 0.3;
+						if (!cavernized[x + ',' + y]) {
+							if (cavernized[(x+1) + ',' + (y)] && KDRandom() < chance) {
+								cavernized[x + ',' + y] = true;
+							} else if (cavernized[(x-1) + ',' + (y)] && KDRandom() < chance) {
+								cavernized[x + ',' + y] = true;
+							} else if (cavernized[(x) + ',' + (y+1)] && KDRandom() < chance) {
+								cavernized[x + ',' + y] = true;
+							} else if (cavernized[(x) + ',' + (y-1)] && KDRandom() < chance) {
+								cavernized[x + ',' + y] = true;
+							}
+						}
+					}
+			}
+			// now we finalize
+			for (let x = 0; x < KDMapData.GridWidth-1; x++)
+				for (let y = 0; y < KDMapData.GridHeight-1; y++) {
+					if (cavernized[x + ',' + y] && !KDMapData.TilesSkin[x + ',' + y]) {
+						KDMapData.TilesSkin[x + ',' + y] = {skin: "cry", force: true};
+					} else if (naturalized[x + ',' + y] && !KDMapData.TilesSkin[x + ',' + y]) {
+						KDMapData.TilesSkin[x + ',' + y] = {skin: "jngWild", force: true};
+					}
+				}
+		},
+
 		tagModifiers: {
 			"open": 6,
 			"door": 0.5,
 			"jungle": 100,
 			"cavern": 60,
+			"temple": 5,
 		},
 
 		music: {
@@ -265,7 +393,7 @@ const KinkyDungeonMapParams = {
 			{Type: "Leather", Weight: 5},
 			{Type: "Metal", Weight: 3},
 			{Type: "Rope", Weight: 5},
-			{Type: "Will", Weight: 5},]
+			{Type: "Will", Weight: 13},]
 	},
 	"tmp":{//DungeonName3,-Lost Temple-
 		"background" : "SpookyForest",
@@ -278,7 +406,7 @@ const KinkyDungeonMapParams = {
 		"chargerchance": 0.9,
 		"litchargerchance": 0.2,
 		"chargercount": 10,
-		"shrinecount" : 10,
+		"shrinecount" : 18,
 		"shrinechance" : 0.5,
 		"ghostchance" : 0.5,
 		"doorchance" : 0.9,
@@ -304,6 +432,10 @@ const KinkyDungeonMapParams = {
 			brightness: 6,
 		},
 
+		worldGenCode: () => {
+			KDAddPipes(0.05, 0.1, 0.8, 0.1);
+		},
+
 		music: {
 			"AREA7-LOSTTEMPLE.ogg": 14,
 			"AREA9-BELLOWS.ogg": 2,
@@ -313,6 +445,7 @@ const KinkyDungeonMapParams = {
 			"jungle": 0,
 			"cavern": 0,
 			"temple": 3,
+			"library": 0.7,
 		},
 		globalTags: {
 			"temple": true,
@@ -364,7 +497,7 @@ const KinkyDungeonMapParams = {
 			{Type: "Leather", Weight: 3},
 			{Type: "Metal", Weight: 5},
 			{Type: "Rope", Weight: 3},
-			{Type: "Will", Weight: 7},],
+			{Type: "Will", Weight: 13},],
 
 		"lockmult" : 1.5,
 	},
@@ -379,7 +512,7 @@ const KinkyDungeonMapParams = {
 		"chargerchance": 0.8,
 		"litchargerchance": 0.65,
 		"chargercount": 6,
-		"shrinecount" : 13,
+		"shrinecount" : 16,
 		"shrinechance" : 0.5,
 		"ghostchance" : 0.5,
 		"doorchance" : 0.4,
@@ -396,13 +529,17 @@ const KinkyDungeonMapParams = {
 		torchchance: 0.1,
 		torchchanceboring: 0.1,
 
+		specialChests: {
+			kitty: 3,
+		},
+
 		music: {
 			"AREA2-ANCIENTTOMBS.ogg": 10,
 		},
 
 		worldGenCode: () => {
-			for (let X = 1; X < KinkyDungeonGridWidth - 1; X++) {
-				for (let Y = 1; Y < KinkyDungeonGridHeight - 1; Y++) {
+			for (let X = 1; X < KDMapData.GridWidth - 1; X++) {
+				for (let Y = 1; Y < KDMapData.GridHeight - 1; Y++) {
 					if (KinkyDungeonMapGet(X, Y) == 'X' && KDRandom() < 0.15 + 0.45 * Math.min(1, KinkyDungeonDifficulty/30)) {
 						KinkyDungeonMapSet(X, Y, '3');
 						DialogueCreateEnemy(X, Y, "MummyCursed");
@@ -423,6 +560,8 @@ const KinkyDungeonMapParams = {
 			"temple": 2,
 			"jungle": 0,
 			"cavern": 0,
+			"library": 0.1,
+			"urban": 0.5,
 		},
 		globalTags: {
 			"egyptian": true,
@@ -463,7 +602,7 @@ const KinkyDungeonMapParams = {
 			{Type: "Metal", Weight: 3},
 			{Type: "Rope", Weight: 4},
 			{Type: "Leather", Weight: 6},
-			{Type: "Will", Weight: 7},]
+			{Type: "Will", Weight: 13},]
 	},
 	"lib":{//DungeonName12,-Magic Library-
 		"background" : "MagicSchoolLaboratory",
@@ -478,7 +617,7 @@ const KinkyDungeonMapParams = {
 		"chargerchance": 0.8,
 		"litchargerchance": 0.25,
 		"chargercount": 6,
-		"shrinecount" : 15,
+		"shrinecount" : 11,
 		"shrinechance" : 0.5,
 		"ghostchance" : 0.5,
 		"doorchance" : 0.0,
@@ -514,6 +653,8 @@ const KinkyDungeonMapParams = {
 			"urban": 2,
 			"jungle": 0,
 			"cavern": 0,
+			"library": 4,
+			"temple": 0.5,
 		},
 
 		"shortcuts": [
@@ -551,7 +692,7 @@ const KinkyDungeonMapParams = {
 			{Type: "Metal", Weight: 3},
 			{Type: "Rope", Weight: 4},
 			{Type: "Leather", Weight: 6},
-			{Type: "Will", Weight: 7},]
+			{Type: "Will", Weight: 13},]
 	},
 	"cry":{//DungeonName13,-Crystal Cave-
 		"background" : "MagicSchoolEscape",
@@ -564,7 +705,7 @@ const KinkyDungeonMapParams = {
 		"litchargerchance": 1.0,
 		"chargercount": 4,
 		"chestcount" : 10,
-		"shrinecount" : 13,
+		"shrinecount" : 9,
 		"shrinechance" : 0.8,
 		"ghostchance" : 0.5,
 		"doorchance" : 0.05,
@@ -600,6 +741,7 @@ const KinkyDungeonMapParams = {
 			"cavern": 80,
 			"urban": 0.5,
 			"door": 0.5,
+			"library": 0.0,
 		},
 
 		"setpieces": [
@@ -648,7 +790,7 @@ const KinkyDungeonMapParams = {
 			{Type: "Metal", Weight: 3},
 			{Type: "Rope", Weight: 4},
 			{Type: "Leather", Weight: 6},
-			{Type: "Will", Weight: 7},]
+			{Type: "Will", Weight: 13},]
 	},
 
 	"ore":{//DungeonName8,-Orrery-
@@ -662,7 +804,7 @@ const KinkyDungeonMapParams = {
 		"chargerchance": 0.9,
 		"litchargerchance": 0.2,
 		"chargercount": 10,
-		"shrinecount" : 10,
+		"shrinecount" : 13,
 		"shrinechance" : 0.5,
 		"ghostchance" : 0.7,
 		"doorchance" : 0.9,
@@ -696,6 +838,7 @@ const KinkyDungeonMapParams = {
 			"temple": 3,
 			"urban": 0.4,
 			"dungeon": 0,
+			"library": 1,
 		},
 		globalTags: {
 			"temple": true,
@@ -744,7 +887,7 @@ const KinkyDungeonMapParams = {
 			{Type: "Leather", Weight: 5},
 			{Type: "Metal", Weight: 3},
 			{Type: "Rope", Weight: 5},
-			{Type: "Will", Weight: 7},],
+			{Type: "Will", Weight: 13},],
 
 		"lockmult" : 1.6,
 	},
@@ -795,6 +938,7 @@ const KinkyDungeonMapParams = {
 			"dungeon": 0,
 			"factory": 2.0,
 			"bellows": 3.0,
+			"library": 0.1,
 		},
 		globalTags: {
 			"factory": true,
@@ -827,6 +971,10 @@ const KinkyDungeonMapParams = {
 		"min_height" : 4,
 		"max_height" : 4,
 
+		worldGenCode: () => {
+			KDAddPipes(0.2, 0.35, 0.7, 0.2);
+		},
+
 		factionList: ["Nevermere", "AncientRobot", "Bandit", "Dressmaker", "Bountyhunter", "Maidforce", "Alchemist"],
 
 		enemyTags: ["dollsmith", "dollrare", "oldrobot", "oldrobotturret", "tech", "metal", "electric", "fire"],
@@ -840,9 +988,97 @@ const KinkyDungeonMapParams = {
 			{Type: "Leather", Weight: 7},
 			{Type: "Metal", Weight: 10},
 			{Type: "Rope", Weight: 3},
-			{Type: "Will", Weight: 7},],
+			{Type: "Will", Weight: 13},],
 
 		"lockmult" : 2.0,
+	},
+
+
+
+
+	// Extra
+	"DemonTransition":{// DungeonName1,-Catacombs-
+		shadowColor: 0x000000,
+		"background" : "Dungeon",
+		"openness" : 0,
+		"density" : 2,
+		"crackchance" : 0.09,
+		"barchance" : 0.2,
+		"brightness" : 4,
+		"chestcount" : 0,
+		"shrinecount" : 12,
+		"chargerchance": 0.5,
+		"litchargerchance": 0.5,
+		"chargercount": 7,
+		"shrinechance" : 0.6,
+		"ghostchance" : 0.5,
+		"doorchance" : 0.8,
+		"nodoorchance" : 0.05,
+		"doorlockchance" : -0.05,
+		"trapchance" : 0.65,
+		"grateChance" : 0.1,
+		"rubblechance" : 0.3,
+		"brickchance" : 0.4,
+		"cacheInterval" : 1,
+		"forbiddenChance" : 0.72,
+		"forbiddenGreaterChance" : 0.33,
+		cageChance: 0.8,
+		torchlitchance: 0.2,
+		torchchance: 1.0,
+		torchchanceboring: -0.4,
+		torchreplace: {
+			sprite: "EdgeOrb",
+			unlitsprite: "EdgeOrbDead",
+			brightness: 5,
+		},
+
+		worldGenCode: () => {
+		},
+
+		music: {
+			"EDGEOFREALITY.ogg": 10,
+		},
+
+		tagModifiers: {
+			"narrow": 2,
+			"dungeon": 2,
+			"open": 0.5,
+			"jungle": 0,
+			"cavern": 0,
+			"library": 0,
+		},
+
+		"setpieces": [
+		],
+
+		"shortcuts": [
+		],
+		"mainpath": [
+		],
+
+		"traps": [
+			{Name: "SpawnEnemies", Enemy: "ShadowHand", strict: true, Level: 0, Power: 3, Weight: 10},
+			{Name: "SpawnEnemies", Enemy: "TickleTerror", strict: true, Level: 0, Power: 1, Weight: 10},
+			{Name: "SpawnEnemies", Enemy: "HugHorror", strict: true, Level: 0, Power: 1, Weight: 10},
+		],
+
+		"min_width" : 5,
+		"max_width" : 7,
+		"min_height" : 5,
+		"max_height" : 6,
+
+		factionList: ["Demon"],
+
+		enemyTags: ["edgereality"],
+		"defeat_outfit": "Dungeon",
+		"shrines": [
+			{Type: "Latex", Weight: 3},
+			{Type: "Commerce", Weight: 0},
+			{Type: "Leather", Weight: 5},
+			{Type: "Metal", Weight: 3},
+			{Type: "Rope", Weight: 2},
+			{Type: "Will", Weight: 13},]
+
 	},
 };
 

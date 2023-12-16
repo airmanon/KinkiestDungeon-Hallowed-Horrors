@@ -5,15 +5,27 @@ let KDDoorKnobChanceArms = 0.5; // Chance to open door with mitts but no arm bin
 let KDDoorAttractChance = 0.25; // Chance to attract someone by banging
 let KDDoorAttractChanceArms = 0.1; // Chance to attract someone by rattling
 
+/** These weapons can get removed if you start the game with them*/
+let kdStartWeapons = ["Knife", "Dirk", "Sword", "Shield"];
+
+let KDPerkParams = {
+	KDEnemyDamageMult: 2.5, // Increase in enemy damage effect
+	KDEnemyResistBuff: 0.85, // Buff to tease damage
+	KDEnemyArmorBoost: 2.0, // Extra armor enemies get
+};
+
 let KDCategoriesStart = [
 	{name: "Toggles", buffs: [], debuffs: [],},
 	{name: "Multiclass", buffs: [], debuffs: [],},
+	{name: "Major", buffs: [], debuffs: [],},
 	{name: "Restraints", buffs: [], debuffs: [],},
 	{name: "Kinky", buffs: [], debuffs: [],},
 	{name: "Damage", buffs: [], debuffs: [],},
+	{name: "Senses", buffs: [], debuffs: [],},
 	{name: "Combat", buffs: [], debuffs: [],},
 	{name: "Magic", buffs: [], debuffs: [],},
 	{name: "Enemies", buffs: [], debuffs: [],},
+	{name: "Common", buffs: [], debuffs: [],},
 	{name: "Map", buffs: [], debuffs: [],},
 	{name: "Start", buffs: [], debuffs: [],},
 	{name: "Boss", buffs: [], debuffs: [],},
@@ -35,19 +47,19 @@ let KDPerkIcons = {
 
 let KDPerkUpdateStats = {
 	"Rigger": () => {
-		KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
 			id: "Rigger1",
 			type: "glueDamageBuff",
 			power: KDRiggerDmgBoost,
 			duration: 2
 		});
-		KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
 			id: "Rigger2",
 			type: "chainDamageBuff",
 			power: KDRiggerDmgBoost,
 			duration: 2
 		});
-		KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
 			id: "Rigger3",
 			type: "BindAmp",
 			power: KDRiggerBindBoost,
@@ -55,34 +67,54 @@ let KDPerkUpdateStats = {
 		});
 	},
 	"Ticklish": () => {
-		KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
 			id: "Ticklish", type: "tickleDamageResist", power: -0.5, duration: 2
 		});
 	},
 	"Stoic": () => {
-		KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
 			id: "Stoic", type: "tickleDamageResist", power: 0.82, duration: 2
 		});
 	},
 	"Lascivious": () => {
-		KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
 			id: "Lascivious", type: "gropeDamageResist", power: -0.5, duration: 2
 		});
 	},
 	"Unperturbed": () => {
-		KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
 			id: "Unperturbed", type: "gropeDamageResist", power: 0.82, duration: 2
 		});
 	},
 	"PainTolerance": () => {
-		KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
 			id: "PainTolerance", type: "painDamageResist", power: 2.0, duration: 2
 		});
 	},
 	"Sticky": () => {
-		KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
 			id: "StickySituation", type: "glueDamageResist", power: -0.4, duration: 2
 		});
+	},
+	"EnemyResist": () => {
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
+			id: "EnemyResist", type: "TeaseBuff", power: KDPerkParams.KDEnemyResistBuff, duration: 2
+		});
+		/*KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
+			id: "EnemyResist1", type: "soulDamageBuff", power: KDEnemyResistBuff, duration: 2
+		});
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
+			id: "EnemyResist2", type: "tickleDamageBuff", power: KDEnemyResistBuff, duration: 2
+		});
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
+			id: "EnemyResist3", type: "painDamageBuff", power: KDEnemyResistBuff, duration: 2
+		});
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
+			id: "EnemyResist4", type: "gropeDamageBuff", power: KDEnemyResistBuff, duration: 2
+		});
+		KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
+			id: "EnemyResist5", type: "charmDamageBuff", power: KDEnemyResistBuff, duration: 2
+		});*/
 	},
 	"BoundPower": () => {
 		KDDamageAmpPerks += KDBoundPowerLevel *  KDBoundPowerMult;
@@ -92,7 +124,7 @@ let KDPerkUpdateStats = {
 	},
 	"Dodge": () => {
 		if (KinkyDungeonMiscastChance < 0.001) {
-			KinkyDungeonApplyBuff(KinkyDungeonPlayerBuffs, {
+			KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {
 				id: "FocusedDodge", type: "Evasion", power: 0.4, duration: 1, sfxApply: "Fwoosh"
 			});
 		}
@@ -162,14 +194,19 @@ let KDPerkCount = {
  * @type {Record<string, KDPerk>}
  */
 let KinkyDungeonStatsPresets = {
+	"MC_Fighter":  {category: "Multiclass", id: "MC_Fighter", debuff: true, cost: 2, blockclass: ["Fighter"], tags: ["start", "mc"]},
+	"MC_Rogue":  {category: "Multiclass", id: "MC_Rogue", cost: 2, blockclass: ["Rogue"], tags: ["start", "mc"]},
+	"MC_Wizard":  {category: "Multiclass", id: "MC_Wizard", debuff: true, cost: 2, blockclass: ["Mage"], tags: ["start", "mc"]},
+	"MC_Peasant":  {category: "Multiclass", id: "MC_Peasant", debuff: true, cost: 1, blockclass: ["Peasant"], tags: ["start", "mc"]},
 	"MC_Trainee":  {category: "Multiclass", id: "MC_Trainee", cost: 2, requireArousal: true, blockclass: ["Trainee"], tags: ["start", "mc"]},
 
-
-	"FutileStruggles":  {category: "Restraints", id: "FutileStruggles", cost: -1, block: ["SecondWind"]},
-	"SecondWind":  {category: "Restraints", id: "SecondWind", cost: 1, block: ["FutileStruggles"]},
+	"NovicePet":  {category: "Major", id: "NovicePet", cost: 1},
+	"CurseSeeker":  {category: "Major", id: "CurseSeeker", cost: -3},
+	"FutileStruggles":  {category: "Restraints", id: "FutileStruggles", cost: -1},
+	"SecondWind":  {category: "Restraints", id: "SecondWind", cost: 1},
 
 	"Stranger": {startPriority: 1000, category: "Enemies", id: "Stranger", cost: 0, block: ["WrongNeighborhood"], tags: ["start"]},
-	"WrongNeighborhood": {startPriority: 1000, category: "Enemies", id: "WrongNeighborhood", cost: -1, block: ["Stranger"], tags: ["start"]},
+	"WrongNeighborhood": {startPriority: 1000, category: "Major", id: "WrongNeighborhood", cost: -1, block: ["Stranger"], tags: ["start"]},
 
 	"Strong": {category: "Restraints", id: 0, cost: 2, block: ["Weak"]},
 	"Weak": {category: "Restraints", id: 1, cost: -1, block: ["Strong"]},
@@ -208,8 +245,9 @@ let KinkyDungeonStatsPresets = {
 	"BoundPower": {category: "Combat", id: 40, cost: 3},
 	"SavourTheTaste": {category: "Combat", id: "SavourTheTaste", cost: -1},
 	"ResilientFoes": {category: "Enemies", id: "ResilientFoes", cost: -1},
-	"KillSquad": {category: "Enemies", id: 41, cost: -3, block: ["Conspicuous"]},
-	"Stealthy": {category: "Enemies", id: 38, cost: 0},
+	"KillSquad": {category: "Major", id: 41, cost: -3, block: ["Conspicuous"]},
+	"Stealthy": {category: "Major", id: 38, cost: 0},
+	"HighProfile": {category: "Major", id: "HighProfile", cost: 0},
 	"Conspicuous": {category: "Enemies", id: 39, cost: -1, block: ["KillSquad"]},
 	"Dominant": {category: "Map", id: "Dominant", cost: 2, block: ["Oppression"]},
 	"Oppression": {category: "Map", id: 50, cost: -1, block: ["Dominant"]},
@@ -221,9 +259,9 @@ let KinkyDungeonStatsPresets = {
 	"Magician": {category: "Magic", id: 36, cost: 3},
 	"Pristine": {category: "Map", id: 22, cost: -1},
 	"Conjurer": {category: "Magic", id: 35, cost: 3},
-	"LostTechnology": {category: "Map", id: 23, cost: -1},
+	"LostTechnology": {category: "Major", buff: true, id: 23, cost: -1},
 	//"Blessed": {category: "Map", id: 8, cost: 1},
-	"Cursed": {category: "Enemies", id: 9, cost: -3},
+	"Cursed": {category: "Major", id: 9, cost: -3},
 	"Studious": {category: "Magic", id: 12, cost: 1, tags: ["start"]},
 	//"Novice": {category: "Magic", id: 7, cost: -1},
 	//"Meditation": {category: "Magic", id: 13, cost: 2},
@@ -236,6 +274,8 @@ let KinkyDungeonStatsPresets = {
 	"Vengeance": {category: "Enemies", id: "Vengeance", cost: -1},
 	"AbsoluteFocus": {category: "Magic", id: "AbsoluteFocus", cost: -1},
 
+	"SelfBondage": {category: "Start", id: "SelfBondage", cost: 0, tags: ["start"]},
+
 	"Hogtied": {startPriority: 50, category: "Start", id: "Hogtied", cost: -1, tags: ["start"]},
 	"StartObsidian": {startPriority: 5, category: "Start", id: "StartObsidian", cost: -2, outfit: "Obsidian", tags: ["start"]},
 	"StartWolfgirl": {startPriority: 10, category: "Start", id: "StartWolfgirl", cost: -2, outfit: "Wolfgirl", tags: ["start"]},
@@ -244,7 +284,8 @@ let KinkyDungeonStatsPresets = {
 
 	"StartCyberDoll": {startPriority: 7, category: "Boss", id: "StartCyberDoll", cost: -2, locked: true, tags: ["start"]},
 
-	"DollmakerVisor": {startPriority: 31, category: "Boss", id: "DollmakerVisor", cost: -1, locked: true, tags: ["start"]},
+	"DollmakerVisor": {startPriority: 31, category: "Boss", id: "DollmakerVisor", cost: -1, block: ["DollmakerMask"], locked: true, tags: ["start"]},
+	"DollmakerMask": {startPriority: 31, category: "Boss", id: "DollmakerMask", cost: -1, block: ["DollmakerVisor"], locked: true, tags: ["start"]},
 	"FuukaCollar": {startPriority: 40, category: "Boss", buff: true, id: "FuukaCollar", cost: -2, locked: true, tags: ["start"]},
 
 
@@ -252,14 +293,17 @@ let KinkyDungeonStatsPresets = {
 	"CommonFuuka": {category: "Boss", id: "CommonFuuka", buff: true, cost: -1, locked: true},
 
 	"Nowhere": {category: "Enemies", id: "Nowhere", cost: -1},
+	"StunBondage": {category: "Enemies", id: "StunBondage", cost: -2},
 	"Prisoner": {category: "Start", id: "Prisoner", cost: 0},
 
 	"Panic": {category: "Map", id: "Panic", cost: -1},
 
 	"Rusted": {category: "Map", id: "Rusted", cost: 1},
-	"Forgetful": {category: "Map", id: "Forgetful", cost: -1, block: ["TotalBlackout"]},
+
+
 	"Unmasked": {category: "Toggles", id: "Unmasked", cost: 0, tags: ["start"]},
 	"NoNurse": {category: "Toggles", id: "NoNurse", cost: 0, tags: ["start"]},
+	"NoPolice": {category: "Toggles", id: "NoPolice", cost: 0, tags: ["start"]},
 	"NoBrats": {category: "Toggles", id: "NoBrats", cost: 0, tags: ["start"], debuff: true, block: ["OnlyBrats"]},
 	"OnlyBrats": {category: "Toggles", id: "OnlyBrats", cost: 0, tags: ["start"], debuff: true, block: ["NoBrats"]},
 	"TapePref": {category: "Toggles", id: "TapePref", cost: 0, tags: ["start"], block: ["TapeOptout"]},
@@ -275,8 +319,16 @@ let KinkyDungeonStatsPresets = {
 
 	"Butterfingers":  {category: "Restraints", id: "Butterfingers", cost: -1},
 	"WeakGrip":  {category: "Restraints", id: "WeakGrip", cost: -1},
-	"Blackout":  {category: "Combat", id: "Blackout", cost: -1, block: ["TotalBlackout"]},
-	"TotalBlackout":  {category: "Combat", id: "TotalBlackout", cost: -2, block: ["Blackout", "Forgetful"]},
+
+
+	"Blackout":  {category: "Senses", id: "Blackout", cost: -1, block: ["TotalBlackout"]},
+	"TotalBlackout":  {category: "Senses", id: "TotalBlackout", cost: -2, block: ["Blackout", "Forgetful"]},
+	"Forgetful": {category: "Senses", id: "Forgetful", cost: -1, block: ["TotalBlackout"]},
+	"NightOwl": {category: "Senses", id: "NightOwl", cost: 2},
+	"Nearsighted": {category: "Senses", id: "Nearsighted", cost: -1, block: ["ArchersEye"]},
+	"KeenHearing": {category: "Senses", id: "KeenHearing", cost: 1},
+	"ArchersEye": {category: "Senses", id: "ArchersEye", cost: 1, block: ["Nearsighted"]},
+
 	"Incantation":  {category: "Magic", id: "Incantation", cost: -1},
 
 
@@ -288,7 +340,10 @@ let KinkyDungeonStatsPresets = {
 	"PainTolerance":  {category: "Damage", id: "PainTolerance", cost: 1},
 
 	"Rigger": {category: "Damage", id: 24, cost: 2},
-	"Pacifist": {category: "Damage", id: 25, cost: -2},
+	"Pacifist": {category: "Major", buff: true, id: 25, cost: -2},
+	"EnemyResist": {category: "Enemies", id: "EnemyResist", cost: 0},
+	"EnemyArmor": {category: "Enemies", id: "EnemyArmor", cost: -1},
+	"EnemyDamage": {category: "Enemies", id: "EnemyDamage", cost: -1},
 	"BurningDesire":  {category: "Damage", id: "BurningDesire", cost: 1},
 	"FrigidPersonality":  {category: "Damage", id: "FrigidPersonality", cost: 2},
 	"GroundedInReality":  {category: "Damage", id: "GroundedInReality", cost: 2},
@@ -299,13 +354,13 @@ let KinkyDungeonStatsPresets = {
 	"Sticky":  {category: "Damage", id: "Sticky", cost: -1},
 	"Breathless":  {category: "Damage", id: "Breathless", cost: -1},
 
-	"CommonMaid": {category: "Enemies", id: "CommonMaid", cost: -1, costGroup: "common"},
-	"CommonLatex": {category: "Enemies", id: "CommonLatex", cost: -1, costGroup: "common"},
-	"CommonLeather": {category: "Enemies", id: "CommonLeather", cost: -1, costGroup: "common"},
-	"CommonExp": {category: "Enemies", id: "CommonExp", cost: -1, costGroup: "common"},
-	"CommonDress": {category: "Enemies", id: "CommonDress", cost: -1, costGroup: "common"},
-	"CommonWolf": {category: "Enemies", id: "CommonWolf", cost: -1, costGroup: "common"},
-	"CommonKitty": {category: "Enemies", id: "CommonKitty", cost: -1, costGroup: "common"},
+	"CommonMaid": {category: "Common", id: "CommonMaid", cost: -1, costGroup: "common"},
+	"CommonLatex": {category: "Common", id: "CommonLatex", cost: -1, costGroup: "common"},
+	"CommonLeather": {category: "Common", id: "CommonLeather", cost: -1, costGroup: "common"},
+	"CommonExp": {category: "Common", id: "CommonExp", cost: -1, costGroup: "common"},
+	"CommonDress": {category: "Common", id: "CommonDress", cost: -1, costGroup: "common"},
+	"CommonWolf": {category: "Common", id: "CommonWolf", cost: -1, costGroup: "common"},
+	"CommonKitty": {category: "Common", id: "CommonKitty", cost: -1, costGroup: "common"},
 
 	"KeepOutfit":  {category: "Kinky", id: "KeepOutfit", cost: 0},
 
@@ -342,7 +397,7 @@ function KDGetPerkCost(perk) {
 }
 
 function KinkyDungeonGetStatPoints(Stats) {
-	let total = 0;
+	let total = KinkyDungeonStatsChoice.get("perksMode") ? 10 : 0;
 	for (let k of Stats.keys()) {
 		if (Stats.get(k)) {
 			if (KinkyDungeonStatsPresets[k]) {
@@ -469,6 +524,30 @@ let KDPerkStart = {
 		KDSetWeapon("Knife");
 		KinkyDungeonGetPlayerWeaponDamage(KinkyDungeonCanUseWeapon());
 	},
+	NovicePet: () =>{
+		KinkyDungeonInventoryAddLoose("MagicPetsuit");
+	},
+	SelfBondage: () =>{
+		if (KinkyDungeonStatsChoice.get("arousalMode")) {
+			KinkyDungeonInventoryAddLoose("TrapBelt");
+			KinkyDungeonInventoryAddLoose("TrapVibe");
+			KinkyDungeonInventoryAddLoose("TrapPlug");
+		}
+		if (KinkyDungeonStatsChoice.get("arousalModePlug")) {
+			KinkyDungeonInventoryAddLoose("RearVibe1");
+		}
+		KinkyDungeonInventoryAddLoose("TrapCuffs");
+		KinkyDungeonInventoryAddLoose("TrapGag");
+		KinkyDungeonInventoryAddLoose("TrapBlindfold");
+		KinkyDungeonInventoryAddLoose("TrapArmbinder");
+		KinkyDungeonInventoryAddLoose("RopeSnakeArmsBoxtie");
+		KinkyDungeonInventoryAddLoose("RopeSnakeArmsWrist");
+		KinkyDungeonInventoryAddLoose("RopeSnakeLegs");
+		KinkyDungeonInventoryAddLoose("RopeSnakeFeet");
+		KinkyDungeonInventoryAddLoose("SturdyLeatherBeltsArms");
+		KinkyDungeonInventoryAddLoose("SturdyLeatherBeltsLegs");
+		KinkyDungeonInventoryAddLoose("SturdyLeatherBeltsFeet");
+	},
 	StartLatex: () =>{
 		KinkyDungeonChangeRep("Latex", 10);
 		KinkyDungeonAddRestraintIfWeaker("LatexCatsuit", 5, true, "Red", false, undefined, undefined, "Jail", true);
@@ -481,6 +560,9 @@ let KDPerkStart = {
 	},
 	DollmakerVisor: () =>{
 		KinkyDungeonAddRestraintIfWeaker("DollmakerVisor", 5, true, "Gold", false, undefined, undefined, undefined, true);
+	},
+	DollmakerMask: () =>{
+		KinkyDungeonAddRestraintIfWeaker("DollmakerMask", 5, true, "Gold", false, undefined, undefined, undefined, true);
 	},
 	StartCyberDoll: () =>{
 		KinkyDungeonChangeRep("Metal", 10);
@@ -516,7 +598,7 @@ let KDPerkStart = {
 		}
 		let outfit = {name: "Maid", id: KinkyDungeonGetItemID(), type: Outfit};
 		if (!KinkyDungeonInventoryGet("Maid")) KinkyDungeonInventoryAdd(outfit);
-		if (KinkyDungeonInventoryGet("Default")) KinkyDungeonInventoryRemove(KinkyDungeonInventoryGet("Default"));
+		//if (KinkyDungeonInventoryGet("Default")) KinkyDungeonInventoryRemove(KinkyDungeonInventoryGet("Default"));
 		KinkyDungeonSetDress("Maid", "Maid");
 	},
 	StartWolfgirl: () =>{
@@ -534,7 +616,7 @@ let KDPerkStart = {
 		KDAddQuest("WolfgirlHunters");
 		let outfit = {name: "Wolfgirl", id: KinkyDungeonGetItemID(), type: Outfit};
 		if (!KinkyDungeonInventoryGet("Wolfgirl")) KinkyDungeonInventoryAdd(outfit);
-		if (KinkyDungeonInventoryGet("Default")) KinkyDungeonInventoryRemove(KinkyDungeonInventoryGet("Default"));
+		//if (KinkyDungeonInventoryGet("Default")) KinkyDungeonInventoryRemove(KinkyDungeonInventoryGet("Default"));
 		KinkyDungeonSetDress("Wolfgirl", "Wolfgirl");
 	},
 	StartObsidian: () =>{
@@ -555,7 +637,7 @@ let KDPerkStart = {
 		}
 		let outfit = {name: "Obsidian", id: KinkyDungeonGetItemID(), type: Outfit};
 		if (!KinkyDungeonInventoryGet("Obsidian")) KinkyDungeonInventoryAdd(outfit);
-		if (KinkyDungeonInventoryGet("Default")) KinkyDungeonInventoryRemove(KinkyDungeonInventoryGet("Default"));
+		//if (KinkyDungeonInventoryGet("Default")) KinkyDungeonInventoryRemove(KinkyDungeonInventoryGet("Default"));
 		KinkyDungeonSetDress("Obsidian", "Obsidian");
 	},
 	Hogtied: () =>{
@@ -575,11 +657,12 @@ let KDPerkStart = {
 		}
 		KinkyDungeonAddRestraintIfWeaker("TrapMittens", 5, true, undefined, false, undefined, undefined, undefined, true);
 		KinkyDungeonAddRestraintIfWeaker("Stuffing", 5, true, undefined, false, undefined, undefined, undefined, true);
-		KinkyDungeonAddRestraintIfWeaker("PanelGag", 5, true, undefined, false, undefined, undefined, undefined, true);
+		KinkyDungeonAddRestraintIfWeaker("HarnessPanelGag", 5, true, undefined, false, undefined, undefined, undefined, true);
 		KinkyDungeonAddRestraintIfWeaker("TrapBlindfold", 5, true, undefined, false, undefined, undefined, undefined, true);
 
-		if (KinkyDungeonInventoryGet("Knife")) KinkyDungeonInventoryRemove(KinkyDungeonInventoryGet("Knife"));
-		if (KinkyDungeonInventoryGet("Dirk")) KinkyDungeonInventoryRemove(KinkyDungeonInventoryGet("Dirk"));
+		for (let w of kdStartWeapons) {
+			if (KinkyDungeonInventoryGet(w)) KinkyDungeonInventoryRemove(KinkyDungeonInventoryGet(w));
+		}
 	},
 	Stranger: () => {
 		for (let key of Object.keys(KinkyDungeonFactionTag)) {
@@ -599,6 +682,19 @@ let KDPerkStart = {
 	},
 	MC_Trainee: () => {
 		KinkyDungeonSpells.push(KinkyDungeonFindSpell("DistractionCast"));
+	},
+	MC_Wizard: () => {
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("ManaRegen"));
+	},
+	MC_Rogue: () => {
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("RogueTargets"));
+	},
+	MC_Peasant: () => {
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("Peasant"));
+	},
+	MC_Fighter: () => {
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("BattleRhythm"));
+		KinkyDungeonSpellChoices.push(KinkyDungeonSpells.length - 1);
 	},
 };
 
@@ -630,13 +726,13 @@ function KinkyDungeonDrawPerks(NonSelectable) {
 	if (CommonIsMobile) KDPerksIndexUIWeight = 1;
 	KDPerksIndexUI = (KDPerksIndex + (KDPerksIndexUIWeight - 1) * KDPerksIndexUI) / KDPerksIndexUIWeight;
 
-	MainCanvas.beginPath();
+	/*MainCanvas.beginPath();
 	MainCanvas.lineWidth = 3;
 	MainCanvas.strokeStyle = KDBorderColor;
 	MainCanvas.moveTo(50, 120);
 	MainCanvas.lineTo(1950, 120);
 	MainCanvas.stroke();
-	MainCanvas.closePath();
+	MainCanvas.closePath();*/
 
 	let tooltip = false;
 	let catsdrawn = 0;
@@ -669,7 +765,8 @@ function KinkyDungeonDrawPerks(NonSelectable) {
 		Y += KDPerksYPad;
 		Y_alt = Y;
 		//MainCanvas.textAlign = "left";
-		DrawTextFitKD(TextGet("KDCategory" + c.name), X + KDPerksButtonWidth + KDPerksButtonWidthPad/2, Y - KDPerksButtonHeight/2 - 5, KDPerksButtonWidth*2, "#ffffff");
+		DrawTextFitKDTo(kdUItext, TextGet("KDCategory" + c.name), X + KDPerksButtonWidth + KDPerksButtonWidthPad/2, Y - KDPerksButtonHeight/2 - 5, KDPerksButtonWidth*2, "#ffffff",
+			undefined, undefined, undefined, undefined, undefined, undefined, true);
 		//MainCanvas.textAlign = "center";
 		if (inView()) {
 			catsdrawn += 1;
@@ -695,7 +792,7 @@ function KinkyDungeonDrawPerks(NonSelectable) {
 					let colorSelected = KDGetPerkCost(stat[1]) > 0 ? "#eeeeff" : KDGetPerkCost(stat[1]) < 0 ? "#ffeeee" : "#eeeeff";
 					let colorExpensive = KDGetPerkCost(stat[1]) > 0 ? "#555588" : KDGetPerkCost(stat[1]) < 0 ? "#885555" : "#555588";
 
-					DrawButtonKDEx(stat[0], (bdata) => {
+					DrawButtonKDExTo(kdUItext, stat[0], (bdata) => {
 						if (!KinkyDungeonStatsChoice.get(stat[0]) && KinkyDungeonCanPickStat(stat[0])) {
 							KinkyDungeonStatsChoice.set(stat[0], true);
 							localStorage.setItem('KinkyDungeonStatsChoice' + KinkyDungeonPerksConfig, JSON.stringify(Array.from(KinkyDungeonStatsChoice.keys())));
@@ -708,7 +805,8 @@ function KinkyDungeonDrawPerks(NonSelectable) {
 						(!KinkyDungeonStatsChoice.get(stat[0]) && KinkyDungeonCanPickStat(stat[0])) ? colorAvailable : (KinkyDungeonStatsChoice.get(stat[0]) ? colorSelected : (NonSelectable ? colorAvailable : colorExpensive)),
 						KinkyDungeonStatsChoice.get(stat[0]) ? (KinkyDungeonRootDirectory + "UI/TickPerk.png") : "", undefined, false, true,
 						KinkyDungeonStatsChoice.get(stat[0]) ? "rgba(140, 140, 140, 0.5)" : KDButtonColor, undefined, undefined, {
-							noTextBG: true
+							noTextBG: true,
+							unique: true,
 						});
 					if (MouseIn(XX, YY, KDPerksButtonWidth, KDPerksButtonHeight)) {
 						DrawTextFitKD(TextGet("KinkyDungeonStatDesc" + (stat[1].id)), 1000, 150, 1500, KDTextWhite, KDTextGray1);
@@ -717,7 +815,7 @@ function KinkyDungeonDrawPerks(NonSelectable) {
 					}
 				}
 				if (!filled_x[X]) {
-					FillRectKD(kdcanvas, kdpixisprites, c.name, {
+					FillRectKD(kdUItext, kdpixisprites, c.name, {
 						Left: X - KDPerksButtonWidthPad,
 						Top: KDPerksYStart,
 						Width: 2 * KDPerksButtonWidth + 3 * KDPerksButtonWidthPad,
@@ -738,7 +836,6 @@ function KinkyDungeonDrawPerks(NonSelectable) {
 
 
 	DrawButtonKDEx("perks>", (bdata) => {
-		// @ts-ignore
 		if (catsdrawn > 2 && !(document.activeElement?.id == 'PerksFilter')) {
 			KDPerksIndex += 1;
 		}
@@ -746,7 +843,6 @@ function KinkyDungeonDrawPerks(NonSelectable) {
 	}, true, 1750, 50, 100, 50, ">>", KDTextWhite);
 
 	DrawButtonKDEx("perks<", (bdata) => {
-		// @ts-ignore
 		if (KDPerksIndex > 0 && !(document.activeElement?.id == 'PerksFilter')) {
 			KDPerksIndex -= 1;
 		}
@@ -758,13 +854,13 @@ function KinkyDungeonDrawPerks(NonSelectable) {
 	let left = adjLists.left;
 	let right = adjLists.right;
 
-	drawVertList(left.reverse(), 380, 85, 250, 25, 4, 18, (data) => {
+	drawVertList(left.reverse(), 380, tooltip ? 85 : 190, 250, 25, tooltip ? 4 : 8, 18, (data) => {
 		return (bdata) => {
 			KDPerksIndex = indexList[data.name];
 			return true;
 		};
 	}, "KDCategory");
-	drawVertList(right, 1620, 85, 250, 25, 4, 18, (data) => {
+	drawVertList(right, 1620, tooltip ? 85 : 190, 250, 25, tooltip ? 4 : 8, 18, (data) => {
 		return (bdata) => {
 			KDPerksIndex = Math.max(0, indexList[data.name] - 2);
 			return true;

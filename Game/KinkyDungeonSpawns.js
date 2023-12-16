@@ -143,6 +143,7 @@ function KinkyDungeonAddTags(tags, Floor) {
 
 let KDPerkToggleTags = [
 	"NoNurse",
+	"NoPolice",
 ];
 
 /**
@@ -156,9 +157,11 @@ let KDPerkToggleTags = [
  * @param {Record<string, {bonus: number, mult: number}>} [bonusTags]
  * @param {string[]} [filterTags]
  * @param {string[]} [requireSingleTag]
+ * @param {number} minWeight - Cut off weights below this one
+ * @param {boolean} minWeightFallback - Fallback to 0 minweight
  * @returns {enemy}
  */
-function KinkyDungeonGetEnemy(enemytags, Level, Index, Tile, requireTags, requireHostile, bonusTags, filterTags, requireSingleTag) {
+function KinkyDungeonGetEnemy(enemytags, Level, Index, Tile, requireTags, requireHostile, bonusTags, filterTags, requireSingleTag, minWeight = 0.0, minWeightFallback = true) {
 	let enemyWeightTotal = 0;
 	let enemyWeights = [];
 	let tags = Object.assign([], enemytags);
@@ -241,7 +244,7 @@ function KinkyDungeonGetEnemy(enemytags, Level, Index, Tile, requireTags, requir
 				for (let tag of tags)
 					if (enemy.terrainTags[tag]) weight += enemy.terrainTags[tag];
 
-				if (weight > 0)
+				if (weight > minWeight)
 					enemyWeightTotal += Math.max(0, weight*weightMulti);
 			}
 		}
@@ -255,6 +258,10 @@ function KinkyDungeonGetEnemy(enemytags, Level, Index, Tile, requireTags, requir
 			return enemyWeights[L].enemy;
 		}
 	}
+
+	// Mild recursion
+	if (minWeight > 0 && minWeightFallback) return KinkyDungeonGetEnemy(enemytags, Level, Index, Tile, requireTags, requireHostile, bonusTags, filterTags, requireSingleTag, 0, false);
+	return undefined;
 }
 
 /**
@@ -283,19 +290,23 @@ function KinkyDungeonCallGuard(x, y, noTransgress, normalDrops, requireTags) {
 	if (point) {
 		if (!KinkyDungeonJailGuard()) {
 			// Jail tag
-			let jt = KDGameData.GuardFaction?.length > 0 ? KinkyDungeonFactionTag[KDGameData.GuardFaction[Math.floor(KDRandom() * KDGameData.GuardFaction.length)]] : "guardCall";
+			let mainFaction = KDGetMainFaction();
 
-			let Enemy =  KinkyDungeonGetEnemy(["Guard", jt], MiniGameKinkyDungeonLevel, KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint], '0', requireTags ? requireTags : [jt, "jail"], true, undefined, ["gagged"]);
+			let jt = KDMapData.GuardFaction?.length > 0 ? KinkyDungeonFactionTag[KDMapData.GuardFaction[Math.floor(KDRandom() * KDMapData.GuardFaction.length)]] : "guardCall";
+
+			let Enemy =  KinkyDungeonGetEnemy(["Guard", jt], KDGetEffLevel(),KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint], '0', requireTags ? requireTags : [jt, "jail"], true, undefined, ["gagged"]);
 			if (!Enemy) {
-				Enemy = KinkyDungeonGetEnemy(["Guard", jt], MiniGameKinkyDungeonLevel, KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint], '0', [jt, "jail"], false, undefined, ["gagged"]);
+				Enemy = KinkyDungeonGetEnemy(["Guard", jt], KDGetEffLevel(),KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint], '0', [jt, "jail"], false, undefined, ["gagged"]);
 				if (!Enemy) {
 					jt = "guardCall";
-					Enemy = KinkyDungeonGetEnemy(["Guard", jt], MiniGameKinkyDungeonLevel, KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint], '0', [jt, "jail"], false);
+					Enemy = KinkyDungeonGetEnemy(["Guard", jt], KDGetEffLevel(),KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint], '0', [jt, "jail"], false);
 				}
 			}
 			let guard = {summoned: true, noDrop: !normalDrops, Enemy: Enemy, id: KinkyDungeonGetEnemyID(),
-				x:KinkyDungeonStartPosition.x, y:KinkyDungeonStartPosition.y, gx: point.x, gy: point.y,
+				x:KDMapData.StartPosition.x, y:KDMapData.StartPosition.y, gx: point.x, gy: point.y,
 				hp: (Enemy && Enemy.startinghp) ? Enemy.startinghp : Enemy.maxhp, movePoints: 0, attackPoints: 0};
+
+			if (mainFaction) guard.faction = mainFaction;
 			KinkyDungeonSetEnemyFlag(guard, "norep", -1);
 			KDGameData.KinkyDungeonJailGuard = guard.id;
 			KDAddEntity(guard);
@@ -357,12 +368,12 @@ function KinkyDungeonHandleWanderingSpawns(delta) {
 	// Chance of bothering with random spawns this turn
 	if (delta > 0 && KDRandom() < baseChance && KinkyDungeonSearchTimer > KinkyDungeonSearchTimerMin) {
 		let hunters = false;
-		let spawnLocation = KinkyDungeonStartPosition;
+		let spawnLocation = KDMapData.StartPosition;
 		let spawnPlayerExclusionRadius = 11;
-		if ((KinkyDungeonTotalSleepTurns > KinkyDungeonSearchStartAmount - BaseAdjust || Queue.length > 0) && KinkyDungeonEntities.length < Math.min(100, (!KinkyDungeonAggressive()) ? (5 + effLevel/15) : (20 + effLevel/KDLevelsPerCheckpoint))) {
+		if ((KinkyDungeonTotalSleepTurns > KinkyDungeonSearchStartAmount - BaseAdjust || Queue.length > 0) && KDMapData.Entities.length < Math.min(100, (!KinkyDungeonAggressive()) ? (5 + effLevel/15) : (20 + effLevel/KDLevelsPerCheckpoint))) {
 			if (KinkyDungeonTotalSleepTurns > KinkyDungeonSearchHuntersAmount - HunterAdjust) hunters = true;
-			if (((KinkyDungeonTotalSleepTurns > KinkyDungeonSearchEntranceAdjustAmount - EntranceAdjust || Queue.length > 0) && KDistChebyshev(KinkyDungeonPlayerEntity.x - KinkyDungeonEndPosition.x, KinkyDungeonPlayerEntity.y - KinkyDungeonEndPosition.y) > spawnPlayerExclusionRadius && KDRandom() < 0.5)
-				|| KDistChebyshev(KinkyDungeonPlayerEntity.x - KinkyDungeonStartPosition.x, KinkyDungeonPlayerEntity.y - KinkyDungeonStartPosition.y) < spawnPlayerExclusionRadius) spawnLocation = KinkyDungeonEndPosition;
+			if (((KinkyDungeonTotalSleepTurns > KinkyDungeonSearchEntranceAdjustAmount - EntranceAdjust || Queue.length > 0) && KDistChebyshev(KinkyDungeonPlayerEntity.x - KDMapData.EndPosition.x, KinkyDungeonPlayerEntity.y - KDMapData.EndPosition.y) > spawnPlayerExclusionRadius && KDRandom() < 0.5)
+				|| KDistChebyshev(KinkyDungeonPlayerEntity.x - KDMapData.StartPosition.x, KinkyDungeonPlayerEntity.y - KDMapData.StartPosition.y) < spawnPlayerExclusionRadius) spawnLocation = KDMapData.EndPosition;
 
 			if (KinkyDungeonVisionGet(spawnLocation.x, spawnLocation.y) < 1 || KinkyDungeonSeeAll) {
 				KinkyDungeonSearchTimer = 0;
@@ -465,7 +476,7 @@ function KinkyDungeonHandleWanderingSpawns(delta) {
 			if (!KDGameData.Hunters) KDGameData.Hunters = [];
 			let hunters = KDGameData.Hunters.map((id) => {return KinkyDungeonFindID(id);});
 
-			let spawnLocation = {x: KinkyDungeonStartPosition.x, y: KinkyDungeonStartPosition.y};
+			let spawnLocation = {x: KDMapData.StartPosition.x, y: KDMapData.StartPosition.y};
 
 			if (hunters.length > 0 || KDistChebyshev(spawnLocation.x - KinkyDungeonPlayerEntity.x, spawnLocation.y - KinkyDungeonPlayerEntity.y) < 10) {
 				// Hunters still exist, or player is too close, simple pulse

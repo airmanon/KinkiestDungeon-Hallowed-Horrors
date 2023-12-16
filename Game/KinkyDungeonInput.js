@@ -22,8 +22,8 @@ function KDProcessInput(type, data) {
 			KinkyDungeonToggleAutoPass = data.AutoPass;
 			KinkyDungeonToggleAutoSprint = data.sprint;
 			KinkyDungeonSuppressSprint = data.SuppressSprint;
-			KinkyDungeonMove(data.dir, data.delta, data.AllowInteract, data.SuppressSprint);
-			break;
+			return KinkyDungeonMove(data.dir, data.delta, data.AllowInteract, data.SuppressSprint) ? "move" : "nomove";
+			//break;
 		case "setMoveDirection":
 			KinkyDungeonMoveDirection = data.dir;
 			break;
@@ -42,9 +42,9 @@ function KDProcessInput(type, data) {
 				/** @type {{result: string, data: any}} */
 				let res = KinkyDungeonCastSpell(data.tx, data.ty, sp, data.enemy, data.player, data.bullet, undefined, data);
 				if (res.result == "Cast" && sp.sfx) {
-					KinkyDungeonPlaySound(KinkyDungeonRootDirectory + "/Audio/" + sp.sfx + ".ogg");
+					KinkyDungeonPlaySound(KinkyDungeonRootDirectory + "Audio/" + sp.sfx + ".ogg");
 				}
-				if (res.result != "Fail") {
+				if (res.result != "Fail" && !sp.quick) {
 					KinkyDungeonAdvanceTime(res.data.delta);
 				}
 				KinkyDungeonInterruptSleep();
@@ -82,24 +82,24 @@ function KDProcessInput(type, data) {
 			}
 			break;
 		case "consumable":
-			KDModalArea = false;
-			KinkyDungeonTargetTile = null;
-			KinkyDungeonTargetTileLocation = null;
+			//KDModalArea = false;
 			KinkyDungeonAttemptConsumable(data.item, data.quantity);
+			//KinkyDungeonTargetTile = null;
+			//KinkyDungeonTargetTileLocation = null;
 			break;
 		case "switchWeapon": {
 			KDDelayedActionPrune(["Action", "SwitchWeapon"]);
 			let oldweapon = KinkyDungeonPlayerWeapon;
 			KDGameData.PreviousWeapon = oldweapon;
 			KDSetWeapon(data.weapon);
-			KinkyDungeonGetPlayerWeaponDamage(KinkyDungeonCanUseWeapon());
+			KinkyDungeonGetPlayerWeaponDamage(KinkyDungeonCanUseWeapon(undefined, undefined, KinkyDungeonWeapons[data.weapon]));
 			if (KinkyDungeonStatsChoice.has("Disorganized")) {
 				KinkyDungeonAdvanceTime(1);
 				KinkyDungeonSlowMoveTurns = 2;
 			} else if (!KinkyDungeonStatsChoice.has("QuickDraw"))
 				KinkyDungeonAdvanceTime(1);
 			KinkyDungeonSendActionMessage(2, TextGet("KinkyDungeonEquipWeapon").replace("WEAPONNAME", TextGet("KinkyDungeonInventoryItem" + data.weapon)), "white", 5);
-			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Equip.ogg");
+			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "Audio/Equip.ogg");
 			break;
 		}
 		case "unequipWeapon":
@@ -108,29 +108,49 @@ function KDProcessInput(type, data) {
 			KDSetWeapon(null);
 			KinkyDungeonGetPlayerWeaponDamage(KinkyDungeonCanUseWeapon());
 			KinkyDungeonSendActionMessage(2, TextGet("KinkyDungeonUnEquipWeapon").replace("WEAPONNAME", TextGet("KinkyDungeonInventoryItem" + data.weapon)), "white", 5);
-			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Equip.ogg");
+			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "Audio/Equip.ogg");
 			break;
 		case "dress":
 			KDDelayedActionPrune(["Action", "Dress"]);
 			KinkyDungeonSetDress(data.dress, data.outfit);
 			KinkyDungeonSlowMoveTurns = 5;
 			KinkyDungeonSleepTime = CommonTime() + 200;
-			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Equip.ogg");
+			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "Audio/Equip.ogg");
 			break;
+		case "drop": {
+			KDDropItemInv(data.item);
+			break;
+		}
+		case "buffclick": {
+			if (KDBuffClick[data.click]) {
+				KDBuffClick[data.click](data.buff, data.id || KinkyDungeonPlayerEntity);
+			}
+			break;
+		}
+		case "inventoryAction": {
+			if (KDInventoryAction[KDGameData.InventoryAction] && KDInventoryAction[KDGameData.InventoryAction].valid(data.player, data.item)) {
+				KDInventoryAction[KDGameData.InventoryAction].click(data.player, data.item);
+			}
+			break;
+		}
 		case "equip":
 			KDDelayedActionPrune(["Action", "Equip"]);
-			success = KinkyDungeonAddRestraintIfWeaker(KinkyDungeonRestraintsCache.get(data.name), 0, true, "", KinkyDungeonGetRestraintItem(data.Group) && !KinkyDungeonLinkableAndStricter(KinkyDungeonRestraintsCache.get(data.currentItem), KinkyDungeonRestraintsCache.get(data.name)), false, data.events, data.faction, false, data.curse);
+			KinkyDungeonSetFlag("SelfBondage", 1);
+			success = KinkyDungeonAddRestraintIfWeaker(KinkyDungeonGetRestraintByName(data.name), 0, true, "", KinkyDungeonGetRestraintItem(data.Group) && !KinkyDungeonLinkableAndStricter(KinkyDungeonGetRestraintByName(data.currentItem), KinkyDungeonGetRestraintByName(data.name)), false, data.events, data.faction, false, data.curse, undefined, undefined, data.inventoryAs);
 			if (success != undefined) {
-				if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Unlock.ogg");
+				if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "Audio/Unlock.ogg");
 				KDSendStatus('bound', data.name, "self");
 				loose = KinkyDungeonInventoryGetLoose(data.name);
-				if (!(loose.quantity > 1)) {
-					KinkyDungeonInventoryRemove(loose);
-				} else {
-					loose.quantity -= 1;
+				if (loose) {
+					if (!(loose.quantity > 1)) {
+						KinkyDungeonInventoryRemove(loose);
+					} else {
+						loose.quantity -= 1;
+					}
 				}
 
-				KDStunTurns(2);
+
+				KDStunTurns(KinkyDungeonGetRestraintByName(data.name)?.protection ? 4 : 2, true);
 
 				msg = "KinkyDungeonSelfBondage";
 				if (KDRestraint(loose).Group == "ItemVulvaPiercings" || KDRestraint(loose).Group == "ItemVulva" || KDRestraint(loose).Group == "ItemButt") {
@@ -150,7 +170,7 @@ function KDProcessInput(type, data) {
 			} else return "KDCantEquip";
 		case "tryOrgasm":
 			KDDelayedActionPrune(["Action", "Sexy"]);
-			KinkyDungeonDoTryOrgasm(data.bonus);
+			KinkyDungeonDoTryOrgasm(data.bonus, 0);
 			break;
 		case "tryPlay":
 			KDDelayedActionPrune(["Action", "Sexy"]);
@@ -213,7 +233,7 @@ function KDProcessInput(type, data) {
 				let miscast = KinkyDungeonMiscastChance;
 				let gagTotal = KinkyDungeonGagTotal();
 				if (KinkyDungeoCheckComponents(KinkyDungeonFindSpell("CommandWord"), KinkyDungeonPlayerEntity.x, KinkyDungeonPlayerEntity.y).length > 0) {
-					miscast = miscast + Math.max(0, 1 - miscast) * Math.min(1, gagTotal);
+					miscast = miscast + Math.max(0, 1 - miscast) * Math.min(1, !KDSpellIgnoreComp(spell) ? gagTotal : 0);
 				}
 				if (KDRandom() > miscast) {
 					KinkyDungeonTargetTile.Lock = undefined;
@@ -244,7 +264,7 @@ function KDProcessInput(type, data) {
 			KinkyDungeonShopIndex = data.shopIndex;
 			KinkyDungeonPayShrine(data.type);
 			KinkyDungeonAggroAction('shrine', {});
-			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Magic.ogg");
+			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "Audio/Magic.ogg");
 			break;
 		case "shrineUse":
 			KDDelayedActionPrune(["Action", "World"]);
@@ -263,13 +283,13 @@ function KDProcessInput(type, data) {
 				KinkyDungeonAggroAction('shrine', {x: parseInt(x), y:parseInt(y)});
 				KDGameData.AlreadyOpened.push({x: parseInt(x), y: parseInt(y)});
 				KinkyDungeonUpdateStats(0);
-				if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Magic.ogg");
+				if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "Audio/Magic.ogg");
 			} else {
 				if (KinkyDungeonShrineTypeRemove.includes(type))
 					KinkyDungeonSendActionMessage(9, TextGet("KDNoRestraints"), "#ff5555", 1, true);
 				else
 					KinkyDungeonSendActionMessage(9, TextGet("KinkyDungeonPayShrineFail"), "#ff5555", 1, true);
-				if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Damage.ogg");
+				if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "Audio/Damage.ogg");
 			}
 			KinkyDungeonMultiplayerUpdate(KinkyDungeonNextDataSendTimeDelay);
 			break;
@@ -299,13 +319,13 @@ function KDProcessInput(type, data) {
 			KinkyDungeonChangeMana(5, false, 0, false, true);
 			KDSendStatus('goddess', data.type, 'shrineDrink');
 			KinkyDungeonAggroAction('shrine', {});
-			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Magic.ogg");
+			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "Audio/Magic.ogg");
 
 			let x =  data.targetTile.split(',')[0];
 			let y =  data.targetTile.split(',')[1];
 			KDSummonRevengeMobs(parseInt(x), parseInt(y), tile.type, slimed ? 1.5 : 1);
 
-			KDGameData.PoolUses += 1;
+			KDMapData.PoolUses += 1;
 			break;
 		}
 		case "shrineBottle": {
@@ -327,9 +347,9 @@ function KDProcessInput(type, data) {
 			KinkyDungeonChangeConsumable(KinkyDungeonFindConsumable("PotionMana"), 1);
 			KDSendStatus('goddess', data.type, 'shrineBottle');
 			KinkyDungeonAggroAction('shrine', {});
-			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/PotionDrink.ogg");
+			if (KDToggles.Sound) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "Audio/PotionDrink.ogg");
 
-			KDGameData.PoolUses += 1;
+			KDMapData.PoolUses += 1;
 			break;
 		}
 		case "defeat":
@@ -398,7 +418,7 @@ function KDProcessInput(type, data) {
 				}
 
 				KinkyDungeonMapSet(data.x, data.y, 'p');
-				for (let x = 0; x < KinkyDungeonGridWidth; x++) {
+				for (let x = 0; x < KDMapData.GridWidth; x++) {
 					if (KinkyDungeonMapGet(x, data.y) == 'P') {
 						KinkyDungeonMapSet(x, data.y, 'p');
 					}
@@ -441,7 +461,7 @@ function KDProcessInput(type, data) {
 				KDDelayedActionPrune(["Action", "World"]);
 				/*let allies = KinkyDungeonGetAllies();
 				// Tie up all non-allies
-				for (let e of KinkyDungeonEntities) {
+				for (let e of KDMapData.Entities) {
 					if (e.Enemy.bound && !e.Enemy.tags.angel) {
 						allies.push(e);
 						if (!e.boundLevel) e.boundLevel = e.Enemy.maxhp;
@@ -450,11 +470,11 @@ function KDProcessInput(type, data) {
 						e.rescue = true;
 					}
 				}
-				KinkyDungeonEntities = allies;
+				KDMapData.Entities = allies;
 				KDGameData.PrisonerState = '';
 				KDGameData.KinkyDungeonJailGuard = 0;
 				KinkyDungeonSendTextMessage(10, TextGet("KinkyDungeonRescueMe"), "purple", 10);
-				for (let T of Object.values(KinkyDungeonTiles)) {
+				for (let T of Object.values(KDMapData.Tiles)) {
 					if (T.Lock) T.Lock = undefined;
 					if (T.Type == "Lock") T.Type = undefined;
 					if (T.Type == "Trap") T.Type = undefined;
@@ -466,7 +486,7 @@ function KDProcessInput(type, data) {
 					tile = tiles[Math.floor(tiles.length * KDRandom())];
 					if (tile) {
 						KinkyDungeonMapSet(tile.x, tile.y, "$");
-						KinkyDungeonTilesSet(tile.x + "," + tile.y, {Type: "Angel"});
+						KinkyDungeonTilesSet(tile.x + "," + tile.y, {Type: "Angel", Light: 5, lightColor: 0xffffff});
 						KDStartDialog("AngelHelp","Angel", true, "");
 					}
 					KDGameData.RescueFlag = true;
@@ -516,11 +536,13 @@ function KDProcessInput(type, data) {
 			KDDelayedActionPrune(["Action", "Cast"]);
 			let spell = KinkyDungeonHandleSpellCast(KinkyDungeonSpells[data.CurrentSpell]);
 			if (spell && !(KinkyDungeonSpells[data.CurrentSpell].type == "passive") && !KinkyDungeonSpells[data.CurrentSpell].passive && !KinkyDungeonSpells[data.CurrentSpell].upcastFrom) {
-				if (KinkyDungeonStatsChoice.has("Disorganized")) {
-					KinkyDungeonAdvanceTime(1);
-					KinkyDungeonSlowMoveTurns = 2;
-				} else if (!KinkyDungeonStatsChoice.has("QuickDraw"))
-					KinkyDungeonAdvanceTime(1);
+				if (!spell.quick) {
+					if (KinkyDungeonStatsChoice.has("Disorganized")) {
+						KinkyDungeonAdvanceTime(1);
+						KinkyDungeonSlowMoveTurns = 2;
+					} else if (!KinkyDungeonStatsChoice.has("QuickDraw"))
+						KinkyDungeonAdvanceTime(1);
+				}
 				KinkyDungeonSendActionMessage(5, TextGet("KinkyDungeonSpellTarget" + spell.name).replace("SpellArea", "" + Math.floor(spell.aoe)), "white", 0.1, true);
 			}
 			break;
@@ -531,7 +553,7 @@ function KDProcessInput(type, data) {
 			break;
 		}
 		case "upcastcancel": {
-			KinkyDungeonTickBuffTag(KinkyDungeonPlayerBuffs, "upcast", 1);
+			KinkyDungeonTickBuffTag(KinkyDungeonPlayerEntity, "upcast", 1);
 			break;
 		}
 		case "spellLearn": {
@@ -557,7 +579,7 @@ function KDProcessInput(type, data) {
 							}
 						}
 						KinkyDungeonSetMaxStats();
-						if (KDToggles.Sound && KinkyDungeonIsPlayer()) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "/Audio/Magic.ogg");
+						if (KDToggles.Sound && KinkyDungeonIsPlayer()) AudioPlayInstantSoundKD(KinkyDungeonRootDirectory + "Audio/Magic.ogg");
 						KinkyDungeonCurrentPage = KinkyDungeonSpellIndex(spell.name);
 						if (KinkyDungeonStatsChoice.has("Disorganized")) {
 							KinkyDungeonAdvanceTime(1);
@@ -589,7 +611,7 @@ function KDProcessInput(type, data) {
 						KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity, {id: "TabletDetermination", type: "restore_wp", power: 1, duration: 5});
 					} else {
 						KinkyDungeonApplyBuffToEntity(KinkyDungeonPlayerEntity,
-							{id: "Tablet" + tile.Name, aura: KDGoddessColor(tile.Name), type: "event", duration: 9999, power: 2, player: true, enemies: false, maxCount: 3, tags: ["cast_" + tile.Name.toLowerCase()], events: [
+							{id: "Tablet" + tile.Name, aura: KDGoddessColor(tile.Name), type: "event", duration: 9999, power: 2, player: true, enemies: false, maxCount: 3, tags: ["cast_" + tile.Name.toLowerCase(), "trigger_" + tile.Name.toLowerCase()], events: [
 								{trigger: "calcMana", type: "Tablet", requiredTag: tile.Name.toLowerCase(), power: 0.5},
 							]}
 						);

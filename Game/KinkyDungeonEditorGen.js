@@ -64,6 +64,7 @@ function KDMapTilesPopulate(w, h, indices, data, requiredAccess, maxTagFlags, ta
 	let globalTags = Object.assign({}, data.params.globalTags || {});
 
 	if (KinkyDungeonStatsChoice.get("arousalMode")) globalTags.arousalMode = true;
+	if (KinkyDungeonStatsChoice.get("hardMode")) globalTags.hardMode = true;
 
 	while (tileOrder.length > 0) {
 		let tileOrderInd = Math.floor(KDRandom() * tileOrder.length);
@@ -119,6 +120,10 @@ function KDMapTilesPopulate(w, h, indices, data, requiredAccess, maxTagFlags, ta
 					for (let yy = 1; yy <= tile.h; yy++) {
 						tilesFilled[(indX + xx - 1) + "," + (indY + yy - 1)] = tile;
 						indexFilled[(indX + xx - 1) + "," + (indY + yy - 1)] = tile.index[xx + ',' + yy];
+						KDMapData.CategoryIndex[(indX + xx - 1) + "," + (indY + yy - 1)] = {
+							category: tile.category,
+							tags: tags,
+						};
 					}
 			}
 
@@ -227,7 +232,7 @@ function KD_GetMapTile(index, indX, indY, tilesFilled, indexFilled, tagCounts, r
 	let maxWeight = 0;
 
 	for (let mapTile of Object.values(KDMapTilesList)) {
-		if (mapTile.primInd == index || (mapTile.flexEdge && mapTile.flexEdge['1,1'])) {
+		if (mapTile.primInd == index || (mapTile.flexEdge && mapTile.flexEdge['1,1'] && (mapTile.primInd.includes(index) || (mapTile.flexEdgeSuper && mapTile.flexEdgeSuper['1,1'])))) {
 			if (!KDCheckMapTileFilling(mapTile, indX, indY, indices, requiredAccess, indexFilled)) continue;
 
 			if (!KDCheckMapTileAccess(mapTile, indX, indY, indexFilled, requiredAccess)) continue;
@@ -422,14 +427,14 @@ function KD_PasteTile(tile, x, y, data) {
 		let xx = parseInt(tileLoc[0].split(',')[0]);
 		let yy = parseInt(tileLoc[0].split(',')[1]);
 		if (xx != undefined && yy != undefined) {
-			KinkyDungeonTilesSkin[(xx + x) + "," + (yy + y)] = tileLoc[1];
+			KDMapData.TilesSkin[(xx + x) + "," + (yy + y)] = tileLoc[1];
 		}
 	}
 	/*for (let jail of tile.Jail) {
 		let newJail = Object.assign({}, jail);
 		newJail.x += x;
 		newJail.y += y;
-		KDGameData.JailPoints.push(newJail);
+		KDMapData.JailPoints.push(newJail);
 
 	}*/
 
@@ -450,6 +455,7 @@ function KD_PasteTile(tile, x, y, data) {
 let KDEffectTileGen = {
 	"TorchUnlit": (x, y, tile, tileGenerator, data) => {
 		let torchlitchance = data.params.torchlitchance || 0.6;
+		/*
 		let torchreplace = data.params.torchreplace;
 
 		let spr = torchreplace ? torchreplace.sprite : "Torch";
@@ -459,11 +465,21 @@ let KDEffectTileGen = {
 		KDCreateEffectTile(x, y, {
 			name: spr,
 			duration: 9999,
-		}, 0);
+		}, 0);*/
+		let mapMod = null;
+		if (KDGameData.MapMod) {
+			mapMod = KDMapMods[KDGameData.MapMod];
+		}
+		let altRoom = KDGameData.RoomType;
+		let altType = altRoom ? KinkyDungeonAltFloor((mapMod && mapMod.altRoom) ? mapMod.altRoom : altRoom) : KinkyDungeonBossFloor(data.Floor);
+		if (KDRandom() < torchlitchance)
+			KDTorch(x, y-1, altType, data.params);
+		else
+			KDTorchUnlit(x, y-1, altType, data.params);
 		return null;
 	},
 	"Torch": (x, y, tile, tileGenerator, data) => {
-		let torchlitchance = 1.0;
+		/*let torchlitchance = 1.0;
 		let torchreplace = data.params.torchreplace;
 
 		let spr = torchreplace ? torchreplace.sprite : "Torch";
@@ -473,7 +489,15 @@ let KDEffectTileGen = {
 		KDCreateEffectTile(x, y, {
 			name: spr,
 			duration: 9999,
-		}, 0);
+		}, 0);*/
+
+		let mapMod = null;
+		if (KDGameData.MapMod) {
+			mapMod = KDMapMods[KDGameData.MapMod];
+		}
+		let altRoom = KDGameData.RoomType;
+		let altType = altRoom ? KinkyDungeonAltFloor((mapMod && mapMod.altRoom) ? mapMod.altRoom : altRoom) : KinkyDungeonBossFloor(data.Floor);
+		KDTorch(x, y-1, altType, data.params);
 		return null;
 	},
 	"Wire": (x, y, tile, tileGenerator, data) => {
@@ -491,6 +515,7 @@ let KDEffectTileGen = {
 let KDTileGen = {
 	"Rubble": (x, y, tile, tileGenerator, data) => {
 		let rubblechance = data.params.rubblechance || 0.5;
+		if (KinkyDungeonStatsChoice.get("Pristine")) rubblechance *= 0.3;
 		if (KDRandom() < rubblechance)
 			KinkyDungeonMapSet(x, y, 'R');
 		else if (KDRandom() < rubblechance * rubblechance - 0.01)
@@ -516,13 +541,22 @@ let KDTileGen = {
 		return null;
 	},
 	"Spawn": (x, y, tile, tileGenerator, data) => {
-		data.spawnpoints.push({x:x, y:y, required: tileGenerator.required, ftags: tileGenerator.filterTags, tags: tileGenerator.tags, AI: tileGenerator.AI, faction: tileGenerator.faction});
+		data.spawnpoints.push({
+			x:x,
+			y:y,
+			required: tileGenerator.required,
+			ftags: tileGenerator.filterTags,
+			tags: tileGenerator.tags,
+			AI: tileGenerator.AI,faction: tileGenerator.faction,
+			levelBoost: tileGenerator.levelBoost,
+			forceIndex: tileGenerator.forceIndex,
+		});
 		KinkyDungeonMapSet(x, y, '0');
 		return null;
 	},
 	"ForceSpawn": (x, y, tile, tileGenerator, data) => {
 		if (!tileGenerator.Chance || KDRandom() < tileGenerator.Chance) {
-			let enemy = KinkyDungeonGetEnemy(tileGenerator.tags, MiniGameKinkyDungeonLevel, KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint],
+			let enemy = KinkyDungeonGetEnemy(tileGenerator.tags, MiniGameKinkyDungeonLevel + (tileGenerator.levelBoost || 0), tileGenerator.forceIndex || KinkyDungeonMapIndex[MiniGameKinkyDungeonCheckpoint],
 				'0', tileGenerator.required, tileGenerator.requireHostile, tileGenerator.bonusTags, tileGenerator.filterTags, tileGenerator.requireSingleTag);
 			DialogueCreateEnemy(x, y, enemy.name);
 		}
@@ -626,23 +660,23 @@ let KDTileGen = {
 			return null;
 		}
 		KinkyDungeonMapSet(x, y, '5');
-		KDGameData.JailPoints.push({x: x, y: y, type: "dropoff", direction: tileGenerator.direction || {x: 0, y: -1}, radius: 1, restrainttags: ["dollstand"]});
+		KDMapData.JailPoints.push({x: x, y: y, type: "dropoff", direction: tileGenerator.direction || {x: 0, y: -1}, radius: 1, restrainttags: ["dollstand"]});
 		//KinkyDungeonTilesSkinSet(x + "," + y, 'Bel');
 		return {Sprite: "Floor", Overlay: tileGenerator.Overlay || "DollDropoff"};
 	},
 	"Cage": (x, y, tile, tileGenerator, data) => {
 		KinkyDungeonMapSet(x, y, 'L');
-		KDGameData.JailPoints.push({x: x, y: y, type: "furniture", radius: 1});
+		KDMapData.JailPoints.push({x: x, y: y, type: "furniture", radius: 1});
 		return {Furniture: "Cage"};
 	},
 	"DisplayStand": (x, y, tile, tileGenerator, data) => {
 		KinkyDungeonMapSet(x, y, 'L');
-		KDGameData.JailPoints.push({x: x, y: y, type: "furniture", radius: 1});
+		KDMapData.JailPoints.push({x: x, y: y, type: "furniture", radius: 1});
 		return {Furniture: "DisplayStand"};
 	},
 	"Furniture": (x, y, tile, tileGenerator, data) => {
 		//KinkyDungeonMapSet(x, y, tileGenerator.tile);
-		KDGameData.JailPoints.push({x: x, y: y, type: "furniture", radius: 1});
+		KDMapData.JailPoints.push({x: x, y: y, type: "furniture", radius: 1});
 		return {Furniture: tileGenerator.Furniture};
 	},
 	"Table": (x, y, tile, tileGenerator, data) => {
@@ -695,6 +729,9 @@ let KDTileGen = {
 	"DollTerminal": (x, y, tile, tileGenerator, data) => {
 		KinkyDungeonMapSet(x, y, 't');
 		return {Type: "DollTerminal", OffLimits: true};
+	},
+	"Skin": (x, y, tile, tileGenerator, data) => {
+		return {Skin: tileGenerator.skin, Skin2: tileGenerator.skin};
 	},
 	"BondageMachine": (x, y, tile, tileGenerator, data) => {
 		KinkyDungeonMapSet(x, y, 'N');
@@ -790,4 +827,17 @@ function KDAggregateTileTags(x, y, w, h, tilesFilled, globalTags) {
 		}
 
 	return tags;
+}
+
+/**
+ *
+ * @param {number} x
+ * @param {number} y
+ * @returns {{category: string, tags: string[]}}
+ */
+function KDGetCategoryIndex(x, y) {
+	if (KDMapData.CategoryIndex) {
+		return KDMapData.CategoryIndex[Math.ceil(x/KDTE_Scale) + ',' + Math.ceil(y/KDTE_Scale)];
+	}
+	return {category: "", tags: []};
 }

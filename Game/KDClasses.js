@@ -6,12 +6,17 @@ let KDClassReqs = {
 
 let KDClassStart = {
 	"Fighter": () => { // Fighter
-		KinkyDungeonInventoryAddWeapon("Knife");
+		KinkyDungeonInventoryAddWeapon("Shield");
 		KinkyDungeonInventoryAddWeapon("Sword");
 		if (!KinkyDungeonAddRestraintIfWeaker(KinkyDungeonGetRestraintByName("Breastplate"), 0, true, ""))
 			KinkyDungeonInventoryAddLoose("Breastplate");
-		KDGameData.PreviousWeapon = "Knife";
+		KDGameData.PreviousWeapon = "Shield";
 		KDSetWeapon("Sword");
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("BattleRhythm"));
+		KinkyDungeonSpellChoicesToggle.push(true);
+		KinkyDungeonSpellChoices.push(KinkyDungeonSpells.length - 1);
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("Bondage"));
+		KinkyDungeonSpellChoices.push(KinkyDungeonSpells.length - 1);
 		KinkyDungeonSpells.push(KinkyDungeonFindSpell("CommandWord"));
 		KinkyDungeonSpellChoices.push(KinkyDungeonSpells.length - 1);
 		KinkyDungeonSpells.push(KinkyDungeonFindSpell("WPUp1"));
@@ -28,13 +33,13 @@ let KDClassStart = {
 		KinkyDungeonChangeConsumable(KinkyDungeonConsumables.PotionWill, 2);
 	},
 	"Rogue": () => { // Rogue
-		KinkyDungeonInventoryAddWeapon("Rope");
 		KinkyDungeonInventoryAddWeapon("Dirk");
-
-		if (!KinkyDungeonAddRestraintIfWeaker(KinkyDungeonGetRestraintByName("LeatherBoots"), 0, true, ""))
-			KinkyDungeonInventoryAddLoose("LeatherBoots");
-		KDGameData.PreviousWeapon = "Rope";
+		KinkyDungeonInventoryAddWeapon("Bow");
+		KDGameData.PreviousWeapon = "Bow";
 		KDSetWeapon("Dirk");
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("RogueTargets"));
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("Bondage"));
+		KinkyDungeonSpellChoices.push(KinkyDungeonSpells.length - 1);
 		KinkyDungeonSpells.push(KinkyDungeonFindSpell("CommandWord"));
 		KinkyDungeonSpellChoices.push(KinkyDungeonSpells.length - 1);
 		KinkyDungeonSpells.push(KinkyDungeonFindSpell("SPUp1"));
@@ -48,6 +53,7 @@ let KDClassStart = {
 		KinkyDungeonChangeConsumable(KinkyDungeonConsumables.PotionStamina, 2);
 		KinkyDungeonChangeConsumable(KinkyDungeonConsumables.PotionFrigid, 1);
 		KinkyDungeonChangeConsumable(KinkyDungeonConsumables.PotionWill, 1);
+		KinkyDungeonChangeConsumable(KinkyDungeonConsumables.AncientPowerSource, 1);
 	},
 	"Mage": () => { // Mage
 		KinkyDungeonInventoryAddWeapon("Knife");
@@ -55,6 +61,9 @@ let KDClassStart = {
 		KDGameData.PreviousWeapon = "Knife";
 		KDSetWeapon("ArcaneCrystal");
 
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("ManaRegen"));
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("Bondage"));
+		KinkyDungeonSpellChoices.push(KinkyDungeonSpells.length - 1);
 		KinkyDungeonSpells.push(KinkyDungeonFindSpell("CommandWord"));
 		KinkyDungeonSpellChoices.push(KinkyDungeonSpells.length - 1);
 		KinkyDungeonSpells.push(KinkyDungeonFindSpell("Analyze"));
@@ -70,14 +79,16 @@ let KDClassStart = {
 		KinkyDungeonChangeConsumable(KinkyDungeonConsumables.PotionWill, 1);
 	},
 	"Peasant": () => { // Peasant
-		KinkyDungeonSpellChoices = [];
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("Peasant"));
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("Bondage"));
+		KinkyDungeonSpellChoices.push(KinkyDungeonSpells.length - 1);
 		KinkyDungeonSpellPoints = 3;
 	},
 	"Trainee": () => { // Trainee
-		KinkyDungeonSpellChoices = [];
+		KinkyDungeonSpells.push(KinkyDungeonFindSpell("Bondage"));
+		KinkyDungeonSpellChoices.push(KinkyDungeonSpells.length - 1);
 		KinkyDungeonSpellPoints = 3;
 		KinkyDungeonGold = 100;
-		KinkyDungeonSpellChoices = [];
 		KinkyDungeonSpells.push(KinkyDungeonFindSpell("DistractionCast"));
 		KinkyDungeonSpells.push(KinkyDungeonFindSpell("MPUp1"));
 		KinkyDungeonSpells.push(KinkyDungeonFindSpell("APUp1"));

@@ -11,10 +11,12 @@
 // speed: speed of a "bolt" projectile
 // playerEffect: What happens when the effect hits a player
 // trail, trailchance, traildamage, traillifetime: for lingering projectiles left behind the projectile
-// onhit: What happens on AoE. Deals aoepower damage, or just power otherwise
+// onhit: What happens on AoE. Deals aoedamage damage, or just power otherwise
 
 let KDCommandWord = {name: "CommandWord", tags: ["command", "binding", "utility", "defense"], sfx: "Magic", school: "Conjure", manacost: 9, components: ["Verbal"], level:1, type:"special", special: "CommandWord", noMiscast: true,
 	onhit:"", time:25, power: 0, range: 2.8, size: 1, damage: ""};
+let KDBondageSpell = {name: "Bondage", tags: ["binding", "utility", "offense"], quick: true, school: "Any", manacost: 0, components: ["Arms"], level:1, spellPointCost: 0, type:"special", special: "Bondage", noMiscast: true,
+	onhit:"", time:25, power: 0, range: 1.5, size: 1, damage: ""};
 
 /**
  * These are starting spells
@@ -66,7 +68,7 @@ let KinkyDungeonLearnableSpells = [
 		// Illusion
 		["ApprenticeLight", "ApprenticeShadow", "ApprenticeMystery", "ApprenticeProjection", "ApprenticeKnowledge"],
 		// Perk exclusive
-		["DistractionCast"],
+		["Bondage", "BattleRhythm", "LimitSurge", "ArcaneBlast", "AkashicConflux", "ArcaneBarrier", "ManaHarvesting", "SecondWind1", "NovicePet1", "NovicePet2", "NovicePet3", "NovicePetX", "Peasant", "RogueTargets", "RogueBind", "RogueTraps", "RogueTraps2", "RogueEscape", "ManaRegen", "StaffUser2" ,"ManaRegenFast","ManaRegenFast2","ManaRegenPlus","ManaRegenPlus2","DistractionCast", "ChaoticOverflow", "OrgasmMana1", "OrgasmBuff", "EdgeMana1"],
 	],
 
 	//Page 1: Elements
@@ -74,7 +76,7 @@ let KinkyDungeonLearnableSpells = [
 		// Verbal
 		["Firecracker", "Incinerate", "Gust", "Freeze", "FlashFreeze", "Hailstorm", "IceBreath", "Tremor", "Earthquake", "Shield", "GreaterShield", "IronBlood", "Electrify", "Thunderstorm", "StaticSphere", "Rainstorm"],
 		// Arms
-		["Firebolt", "Fireball", "WindBlast", "Icebolt", "Snowball", "IceOrb", "Icicles", "IceLance", "StoneSkin", "Shock", "Crackle", "LightningBolt", "WaterBall", "TidalBall"],
+		["Firebolt", "Fireblast", "Fireball", "WindBlast", "Icebolt", "Snowball", "IceOrb", "Icicles", "IceLance", "StoneSkin", "Shock", "Crackle", "LightningBolt", "WaterBall", "TidalBall"],
 		// Legs
 		["Ignite", "Fissure", "Sleet", "BoulderLaunch", "BigBoulderLaunch", "Earthform", "EarthformRing", "EarthformMound", "EarthformLine", "BoulderKick", "Volcanism", "FlameRune", "FreezeRune", "LightningRune",],
 		// Passive
@@ -96,7 +98,7 @@ let KinkyDungeonLearnableSpells = [
 	//Page 3: Illusion
 	[
 		// Verbal
-		["Flash", "GreaterFlash", "FocusedFlash", "ShadowWarrior", "Shroud", "Invisibility"],
+		["Flash", "GreaterFlash", "FocusedFlash", "ShadowWarrior", "Shroud", "Invisibility", "GreaterInvisibility"],
 		// Arms
 		["ShadowBlade", "ShadowSlash", "Dagger", "TrueSteel", "Ring", "Light", "Corona"],
 		// Legs
@@ -108,13 +110,13 @@ let KinkyDungeonLearnableSpells = [
 	//Page 4: Upgrades
 	[
 		// Strength
-		["IronWill", "SteadfastGuard", "WillStruggle"],
+		["IronWill", "SteadfastGuard", "WillStruggle", "Parry", "WillParry", "SteelParry", "GuardBoost", "DaggerParry", "Riposte"],
 		// Dex
-		["Athlete", "Vault", "Sneaky", "Evasive1", "Evasive2", "Evasive3"],
+		["Athlete", "Sneaky", "Evasive1", "Evasive2", "Evasive3", "Vault", "VaultAdv", "ArrowFireSpell", "ArrowVineSpell"],
 		// Intellect
-		["SummonUp1", "SummonUp2", "StaffUser1", "StaffUser2", "StaffUser3"],
+		["SummonUp1", "SummonUp2", "StaffUser1", "StaffUser3"],
 		// Misc
-		["CriticalStrike"],
+		["CriticalStrike", "MagicalOverload", "OrgasmFrequency", "OrgasmFrequency2", "OrgasmResist"],
 	],
 ];
 
@@ -126,6 +128,267 @@ let KinkyDungeonLearnableSpells = [
  * @type {Record<string, spell[]>}
  */
 let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. When you plan to use a mystic seal, you get 3 spells to choose from.
+	"Any": [
+
+		{name: "SPUp1", school: "Any", hide: true, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+		{name: "WPUp1", school: "Any", hide: true, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+
+		{name: "APUp1", hide: true, school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+		{name: "APUp2", hide: true, school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+		{name: "APUp3", hide: true, school: "Any", manacost: 0, components: [], level:4, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+
+		{name: "MPUp1", hide: true, school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+		{name: "MPUp2", hide: true, school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+		{name: "MPUp3", hide: true, school: "Any", manacost: 0, components: [], level:4, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+		{name: "SummonUp1", hide: true, tags: ["upgrade"], hideLearned: true, hideUnlearnable: true, school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+		{name: "SummonUp2", hide: true, tags: ["upgrade"], hideLearned: false, hideUnlearnable: true, prerequisite: "SummonUp1", school: "Any", manacost: 0, components: [], level:2, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+
+		{name: "OrgasmResist", tags: ["will", "utility"], school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			events: [
+				{type: "OrgasmResistBuff", trigger: "tick"},
+				{type: "OrgasmResist", trigger: "calcInvolOrgasmChance", power: 0},
+				{type: "ChangeEdgeDrain", trigger: "calcEdgeDrain", mult: 0.3},
+				{type: "Buff", trigger: "tick", power: 1.0, buffType: "soulDamageResist"},
+				{type: "Buff", trigger: "tick", power: 1.0, buffType: "charmDamageResist"},
+			]},
+
+		{name: "Athlete", tags: ["stamina", "utility"], school: "Any", spellPointCost: 1, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "Buff", trigger: "tick", power: 0.67, buffType: "SprintEfficiency"},
+		]},
+		{name: "Sneaky", tags: ["buff", "utility"], school: "Any", spellPointCost: 1, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "Buff", trigger: "tick", power: 0.5, prereq: "Waiting", buffType: "Sneak", mult: 1, tags: ["SlowDetection", "move", "cast"]},
+		]},
+		{name: "Evasive1", tags: ["buff", "defense"], school: "Any", spellPointCost: 1, hideLearned: true, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "Buff", trigger: "tick", power: 0.1, buffType: "Evasion"},
+		]},
+		{name: "Evasive2", tags: ["buff", "defense"], school: "Any", spellPointCost: 1, hideLearned: true, prerequisite: "Evasive1", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "Buff", trigger: "tick", power: 0.15, buffType: "Evasion"},
+		]},
+		{name: "Evasive3", tags: ["buff", "defense"], school: "Any", spellPointCost: 1, prerequisite: "Evasive2", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "Buff", trigger: "tick", power: 0.25, buffType: "Evasion"},
+		]},
+		{name: "CriticalStrike", tags: ["damage", "offense", "buff"], school: "Any", spellPointCost: 2, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			//{trigger: "beforePlayerAttack", type: "CritBoost", prereq: "damageType", kind: "melee", power: 0.5},
+			//{trigger: "calcDisplayDamage", type: "CritBoost", prereq: "damageType", kind: "melee", power: 0.5},
+			{trigger: "calcCrit", type: "CritBoost", prereq: "damageType", kind: "melee", power: 0.5},
+		]},
+		{name: "MagicalOverload", tags: ["damage", "offense", "buff"], school: "Any", spellPointCost: 1, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{trigger: "calcCrit", type: "MagicalOverload", prereq: "damageType", kind: "magic", power: 0.25},
+		]},
+		{name: "CriticalStrikeMagic", tags: ["damage", "offense", "buff"], school: "Any", spellPointCost: 1, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			//{trigger: "beforePlayerAttack", type: "CritBoost", prereq: "damageType", kind: "melee", power: 0.5},
+			//{trigger: "calcDisplayDamage", type: "CritBoost", prereq: "damageType", kind: "melee", power: 0.5},
+			{trigger: "calcCrit", type: "CritBoost", prereq: "damageType", kind: "magic", power: 0.5},
+		]},
+		{name: "Vault", tags: ["damage", "utility", "buff"], prerequisite: "Evasive1", school: "Any", spellPointCost: 1, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{trigger: "canSprint", type: "VaultBasic"},
+		]},
+		{name: "VaultAdv", tags: ["damage", "utility", "buff"], prerequisite: "Vault", school: "Any", spellPointCost: 1, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{trigger: "canSprint", type: "Vault"},
+		]},
+		{name: "IronWill", tags: ["will", "defense"], school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "IronWill", trigger: "calcMaxStats", power: 0.4},
+		]},
+		{name: "SteadfastGuard", tags: ["will", "defense"], school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "SteadfastGuard", trigger: "calcMaxStats", mult: 0.5, power: 5, },
+		]},
+		{name: "WillStruggle", tags: ["will", "utility"], school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "WillStruggle", mult: 0.01, power: 5, StruggleType: "Struggle", trigger: "beforeStruggleCalc", msg: "KinkyDungeonSpellWillStruggleMsg"},
+		]},
+		{name: "Riposte", tags: ["will", "offense"], school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "Riposte", trigger: "blockPlayer"},
+		]},
+		{name: "Parry", tags: ["will", "defense"], school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "Parry", power: 0.15, trigger: "tick"},
+		]},
+		{name: "GuardBoost", tags: ["defense"], prerequisite: "WillParry", school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "GuardBoost", trigger: "tick"},
+		]},
+		{name: "WillParry", tags: ["defense"], prerequisite: "Parry", school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "WillParry", mult: 0.01, trigger: "tick"},
+		]},
+		{name: "SteelParry", tags: ["defense"], prerequisite: "WillParry", school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "SteelParry", mult: 0.01, trigger: "tick"},
+		]},
+		{name: "DaggerParry", tags: ["defense"], prerequisite: "Parry", school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "DaggerParry", power: 0.15, trigger: "tick"},
+		]},
+		{name: "StaffUser1", tags: ["utility"], school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "StaffUser1", trigger: "calcMultMana", power: 0.8},
+		]},
+		{name: "ManaPoolUp", tags: ["utility"], hideUnlearnable: true, school: "Any", manacost: 0, components: [], level:2, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0.5, damage: "inert", events: [
+			{type: "IncreaseManaPool", trigger: "calcMaxStats", power: 10},
+		]},
+		{name: "StaffUser3", tags: ["utility"], prerequisite: "StaffUser1", school: "Any", manacost: 0, components: [], level:3, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "StaffUser3", trigger: "beforeMultMana", power: 0.75},
+		]},
+	],
+	"Special": [
+
+		{name: "RogueTargets", tags: ["utility"], school: "Special", manacost: 0, components: [], classSpecific: "Rogue", prerequisite: "Null", hideUnlearnable: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			//{type: "RogueTargets", trigger: "tick"},
+			//{type: "RogueTargets", trigger: "postQuest"},
+			//{type: "RogueTargets", trigger: "kill"},
+			//{type: "RogueTargets", trigger: "draw"},
+			{type: "RogueTargets", trigger: "duringCrit", mult: 1.5},
+		]},
+		{name: "RogueBind", tags: ["utility"], school: "Special", manacost: 0, components: [], classSpecific: "Rogue", prerequisite: "RogueTargets", hideWithout: "RogueTargets", level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "RogueBind", trigger: "duringCrit"},
+			{type: "RogueBind", trigger: "calcBindCrit", power: 0.4},
+		]},
+		{name: "RogueTraps", tags: ["utility"], school: "Special", manacost: 0, components: [], classSpecific: "Rogue", prerequisite: "RogueTargets", hideWithout: "RogueTargets", level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "RogueTraps", trigger: "beforeCast"},
+		]},
+		{name: "RogueTraps2", tags: ["utility"], school: "Special", manacost: 0, components: [], classSpecific: "Rogue", prerequisite: "RogueTraps", hideWithout: "RogueTargets", level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "RogueTraps2", trigger: "beforeCrit"},
+		]},
+		{name: "RogueEscape", tags: ["utility"], school: "Special", manacost: 0, components: [], classSpecific: "Rogue", prerequisite: "RogueTargets", hideWithout: "RogueTargets", level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "RogueEscape", trigger: "postApply", power: 2, time: 12},
+			{type: "RogueEscape", trigger: "affinity", dist: 1.5},
+		]},
+		{name: "Peasant", tags: ["offense"], school: "Special", manacost: 0, components: [], classSpecific: "Peasant", prerequisite: "Null", hideUnlearnable: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "Peasant", trigger: "beforeDamageEnemy", mult: 1.2},
+		]},
+
+		{name: "ArcaneBlast", tags: ["arcane", "offense", "aoe"], prerequisite: "ManaRegen", classSpecific: "Mage", noise: 4.5, sfx: "Shock", castCondition: "hasArcaneEnergy",
+			customCost: "arcane_blast",
+			effectTileDurationModTrail: 2, effectTileTrail: {
+				name: "Sparks",
+				duration: 3,
+			},
+			events: [
+				{type: "ArcaneStore", trigger: "spellTrigger"},
+				{type: "ArcaneStore", trigger: "playerCast"},
+				{type: "ArcaneBlast", trigger: "playerCast", mult: 0.25},
+			],
+			school: "Special", manacost: 1, components: [], level:1, type:"bolt", piercing: true, projectileTargeting:true, nonVolatile: true, onhit:"", power: 0.0, delay: 0, time: 1, range: 8, speed: 8, size: 1, damage: "arcane",
+			trailPower: 0, trailLifetime: 1.1, trailTime: 4, trailDamage:"inert", trail:"lingering", trailChance: 1.0},
+
+
+
+		{name: "StaffUser2", tags: ["utility"], school: "Special", prerequisite: "ManaRegen", classSpecific: "Mage", hideWithout: "ManaRegen", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0.5, damage: "inert", events: [
+			{type: "IncreaseManaPool", trigger: "calcMaxStats", power: 40},
+		]},
+
+		{name: "ArcaneBarrier", tags: ["arcane", "will", "utility"], prerequisite: "ManaRegen", classSpecific: "Mage", hideWithout: "ManaRegen", school: "Special", manacost: 0, components: [], level:1,
+			type:"passive", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			events: [
+				{type: "ArcaneStore", trigger: "spellTrigger", always: true},
+				{type: "ArcaneStore", trigger: "playerCast", always: true},
+				{type: "ArcaneEnergyBondageResist", trigger: "tick", power: 200, mult: 4},
+				{type: "ArcaneBarrier", trigger: "duringPlayerDamage", power: 0},
+			]},
+
+
+		{name: "BattleRhythm", tags: ["fight", "will", "stamina"], prerequisite: "Null", hideUnlearnable: true, school: "Special", manacost: 0, components: [], level:1,
+			type:"passive", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			events: [
+				{type: "BattleRhythmStore", trigger: "beforePlayerLaunchAttack", always: true},
+				{type: "BattleRhythm", trigger: "doAttackCalculation"},
+				{type: "BREvasionBlock", trigger: "tick", mult: 0.1, power: 0.1},
+				{type: "BRDecay", trigger: "tick", power: 0.01},
+
+			]},
+
+
+		{name: "LimitSurge", tags: ["will", "stamina", "utility"], prerequisite: "BattleRhythm", classSpecific: "Fighter", hideWithout: "BattleRhythm", school: "Special", manacost: 0, components: [], defaultOff: true, level:1, type:"passive", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			events: [
+				{type: "LimitSurge", trigger: "toggleSpell", power: 5.0, mult: 1.0, time: 2},
+			]},
+
+		{name: "SecondWind0", tags: ["mana", "utility"], school: "Special", manacost: 0, components: [], prerequisite: "Null", hideUnlearnable: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+		{name: "SecondWind1", tags: ["mana", "utility"], spellPointCost: 2, school: "Special", manacost: 0, components: [], prerequisite: "SecondWind0", hideUnlearnable: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+
+		{name: "NovicePet0", tags: ["mana", "utility"], school: "Special", manacost: 0, components: [], prerequisite: "Null", hideUnlearnable: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+		{name: "NovicePet1", tags: ["mana", "utility"], spellPointCost: 1, school: "Special", manacost: 0, components: [], hideLearned: true, prerequisite: "NovicePet0", hideUnlearnable: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+		{name: "NovicePet2", tags: ["mana", "utility"], spellPointCost: 1, school: "Special", manacost: 0, components: [], hideLearned: true, prerequisite: "NovicePet1", hideUnlearnable: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+		{name: "NovicePet3", tags: ["mana", "utility"], spellPointCost: 0, school: "Special", manacost: 0, components: [], prerequisite: "NovicePet2", hideUnlearnable: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+		{name: "NovicePetX", tags: ["mana", "utility"], spellPointCost: 3, school: "Special", manacost: 0, components: [], hideLearned: true, prerequisite: "NovicePet3", hideUnlearnable: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
+
+
+
+		{name: "ManaRegen", tags: ["mana", "utility"], school: "Special", manacost: 0, components: [], classSpecific: "Mage", prerequisite: "Null", hideUnlearnable: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0,
+			range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+
+				{type: "ManaRegenSuspend", trigger: "afterPlayerCast", time:16},
+				{type: "ManaRegenSuspend", trigger: "afterSpellTrigger", time:16},
+				{type: "ManaRegenSuspend", trigger: "playerAttack", time:16},
+				//{type: "ManaRegenOld", trigger: "tick", mult: 0.2, power: 0.5},
+				{type: "ManaRegen", trigger: "afterMultMana", mult: 0.2},
+			]},
+		{name: "ManaRegenPlus", tags: ["mana", "offense"], school: "Special", manacost: 0, components: [], prerequisite: "ManaRegen", classSpecific: "Mage", hideWithout: "ManaRegen", level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",},
+		{name: "ManaRegenPlus2", tags: ["mana", "offense"], school: "Special", manacost: 0, components: [], prerequisite: "ManaRegen", classSpecific: "Mage", hideWithout: "ManaRegen", level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",},
+		{name: "ManaRegenFast", tags: ["mana", "offense"], school: "Special", manacost: 0, components: [], prerequisite: "ManaRegen", classSpecific: "Mage", hideWithout: "ManaRegen", hideLearned: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",},
+		{name: "ManaRegenFast2", tags: ["mana", "offense"], school: "Special", manacost: 0, components: [], prerequisite: "ManaRegenFast", classSpecific: "Mage", hideWithout: "ManaRegen", level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",},
+
+		{name: "ManaHarvesting", tags: ["mana", "offense"], school: "Special", manacost: 0, components: [], prerequisite: "ManaRegen", classSpecific: "Mage", hideWithout: "ManaRegen",
+			level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			events: [
+				{type: "ArcaneStore", trigger: "spellTrigger", always: true},
+				{type: "ArcaneStore", trigger: "playerCast", always: true},
+				{type: "ManaHarvesting", trigger: "kill", always: true},
+			]
+		},
+
+
+
+		{name: "AkashicConflux", tags: ["will", "mana", "utility"], prerequisite: "ArcaneBlast", classSpecific: "Mage", hideWithout: "ManaRegen", school: "Special",
+			customCost: "arcane_akashic",
+			manacost: 0, components: [], defaultOff: true, level:1, type:"passive", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			events: [
+				{type: "ArcaneStore", trigger: "spellTrigger"},
+				{type: "ArcaneStore", trigger: "playerCast"},
+				{type: "AkashicConflux", trigger: "toggleSpell", power: 10.0, time: 3},
+			]},
+
+		{name: "ChaoticOverflow", tags: ["will", "mana", "utility"], castCondition: "requireCrystallable", prerequisite: "DistractionCast", hideWithout: "DistractionCast", school: "Special", manacost: 0, components: [], defaultOff: true, time: 10, level:1, type:"passive", onhit:"", delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			events: [
+				{type: "ChaoticOverflow", trigger: "toggleSpell", time: 10, mult: 0.25},
+			]},
+
+		{name: "ManaRecharge", tags: ["will", "mana", "utility"], prerequisite: "ManaRegen", classSpecific: "Mage", hideWithout: "ManaRegen", school: "Special", manacost: 0, components: [], defaultOff: true, level:1, type:"passive", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			events: [
+				{type: "ManaRecharge", trigger: "toggleSpell", power: 8.0, mult: 0.1, damage: "soul", count: 3},
+			]},
+
+		{name: "DistractionCast", tags: ["will", "utility"], school: "Special", manacost: 0, components: [], classSpecific: "Trainee", prerequisite: "Null", hideUnlearnable: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
+			{type: "DistractionCast", trigger: "calcMiscast"},
+			{type: "DistractionCast", trigger: "tick"},
+			{type: "DistractionCast", trigger: "playerCast"},
+		]},
+		{name: "OrgasmMana1", tags: ["will", "utility"], school: "Special", manacost: 0, components: [], classSpecific: "Trainee", prerequisite: "DistractionCast", hideWithout: "DistractionCast", level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			blockedBy: ["EdgeMana1"], events: [
+				{type: "RestoreOrgasmMana", trigger: "orgasm", power: 5.0},
+			]},
+		{name: "OrgasmBuff", tags: ["will", "utility"], school: "Special", manacost: 0, components: [], classSpecific: "Trainee", prerequisite: "OrgasmMana1", hideWithout: "DistractionCast", level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			events: [
+				{type: "SatisfiedDamageBuff", trigger: "tick", power: 0.1},
+				{type: "OrgasmDamageBuff", trigger: "orgasm", power: 0.4, time: 8},
+			]},
+
+
+		{name: "OrgasmFrequency", tags: ["will", "utility"], arousalMode: true, school: "Special", manacost: 0, components: [], level:1, hideLearned: true, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			events: [
+				{type: "ChangeOrgasmStamina", trigger: "orgasm", mult: 0.3},
+				{type: "ChangeSPCost", trigger: "tryOrgasm", mult: 0.5},
+			]},
+		{name: "OrgasmFrequency2", tags: ["will", "utility"], arousalMode: true, school: "Special", prerequisite: "OrgasmFrequency", hideUnlearnable: true, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			events: [
+				{type: "ChangeOrgasmStamina", trigger: "orgasm", mult: 0.1},
+				{type: "ChangeSPCost", trigger: "tryOrgasm", mult: 0.5},
+				{type: "ChangeWPCost", trigger: "tryOrgasm", mult: 0.5},
+			]},
+		{name: "EdgeMana1", tags: ["will", "utility"], school: "Special", manacost: 0, components: [], classSpecific: "Trainee", prerequisite: "DistractionCast", hideWithout: "DistractionCast", level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			blockedBy: ["OrgasmMana1"], events: [
+				{type: "RestoreEdgeMana", trigger: "tick", power: 0.1},
+				{type: "EdgeRegenBoost", trigger: "calcManaPool", power: 0.04},
+				//{type: "RestoreDenyMana", trigger: "deny", power: 4.0},
+			]},
+		{name: "DenyMana", tags: ["will", "utility"], school: "Special", manacost: 0, components: [], classSpecific: "Trainee", prerequisite: "EdgeMana1", hideWithout: "DistractionCast", level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert",
+			events: [
+				{type: "RestoreDenyMana", trigger: "deny", power: 4.0},
+			]},
+	],
 	"Elements": [
 		{goToPage: 1, name: "ApprenticeFire", tags: ["magic"], autoLearn: ["Firebolt"], hideLearned: true, hideUnlearnable: true, school: "Elements", manacost: 0, spellPointCost: 1, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
 		{goToPage: 1, name: "ApprenticeWater", tags: ["magic"], autoLearn: ["WaterBall"], hideLearned: true, hideUnlearnable: true, school: "Elements", manacost: 0, spellPointCost: 1, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
@@ -162,38 +425,11 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 			},
 		},
 
-		{name: "DistractionCast", tags: ["will", "defense"], school: "Elements", manacost: 0, components: [], prerequisite: "Null", hideUnlearnable: true, level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{type: "DistractionCast", trigger: "calcMiscast"},
-			{type: "DistractionCast", trigger: "tick"},
-			{type: "DistractionCast", trigger: "playerCast"},
-		]},
 
-		{name: "SPUp1", school: "Any", hide: true, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
-		{name: "WPUp1", school: "Any", hide: true, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
 		{name: "TemperaturePlay", tags: ["fire", "ice", "offense"], prerequisite: ["ApprenticeIce", "ApprenticeFire"], school: "Elements", spellPointCost: 1, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
 			{type: "TemperaturePlay", trigger: "beforeDamageEnemy", power: 0.3},
 		]},
-		{name: "IronWill", tags: ["will", "defense"], school: "Elements", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{type: "IronWill", trigger: "calcMaxStats", power: 0.4},
-		]},
-		{name: "SteadfastGuard", tags: ["will", "defense"], school: "Elements", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{type: "SteadfastGuard", trigger: "calcMaxStats", mult: 0.5, power: 5, },
-		]},
-		{name: "WillStruggle", tags: ["will", "utility"], school: "Elements", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{type: "WillStruggle", mult: 0.01, power: 5, StruggleType: "Struggle", trigger: "beforeStruggleCalc", msg: "KinkyDungeonSpellWillStruggleMsg"},
-		]},
-		{name: "StaffUser1", tags: ["utility"], school: "Elements", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{type: "StaffUser1", trigger: "afterCalcMana", power: 0.8},
-		]},
-		{name: "StaffUser2", tags: ["utility"], prerequisite: "StaffUser1", school: "Elements", manacost: 0, components: [], level:2, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0.5, damage: "inert", events: [
-			{type: "IncreaseManaPool", trigger: "calcMaxStats", power: 10},
-		]},
-		{name: "ManaPoolUp", tags: ["utility"], hideUnlearnable: true, school: "Elements", manacost: 0, components: [], level:2, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0.5, damage: "inert", events: [
-			{type: "IncreaseManaPool", trigger: "calcMaxStats", power: 10},
-		]},
-		{name: "StaffUser3", tags: ["utility"], prerequisite: "StaffUser2", school: "Elements", manacost: 0, components: [], level:3, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{type: "StaffUser3", trigger: "beforeMultMana", power: 0.75},
-		]},
+
 		{name: "Burning", tags: ["fire", "offense"], prerequisite: "ApprenticeFire", school: "Elements", spellPointCost: 2, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
 			{type: "Burning", trigger: "beforeDamageEnemy", damage: "fire"},
 		]},
@@ -205,6 +441,8 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 		]},
 		{name: "Incinerate", prerequisite: "Firecracker", tags: ["fire", "aoe", "dot", "offense", "denial"], noUniqueHits: true, noise: 3, landsfx: "FireSpell", school: "Elements", manacost: 8,
 			upcastFrom: "Firecracker", upcastLevel: 1, hitSpin: 1,
+			pierceEnemies: true,
+			hideWarnings: true,
 			components: ["Verbal"], level:1, type:"inert", onhit:"aoe", delay: 1, power: 2.5, range: 2.5, size: 3, aoe: 1.5, lifetime: 6, damage: "fire", playerEffect: {name: "Damage"},
 			effectTileDurationMod: 12, effectTile: {
 				name: "Ember",
@@ -235,6 +473,7 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 		},
 		{name: "Hailstorm", color: "#92e8c0", prerequisite: "ApprenticeIce", tags: ["ice", "aoe", "dot", "offense", "utility", "denial"], noUniqueHits: true, noise: 3, sfx: "FireSpell", school: "Elements", manacost: 7,
 			components: ["Verbal"], level:1, type:"inert", onhit:"aoe", delay: 1, power: 1.0, time: 2, range: 2.5, size: 3, aoe: 1.5, lifetime: 8, damage: "frost", playerEffect: {name: "Damage"},
+			pierceEnemies: true,
 			effectTileDurationMod: 12, effectTile: {
 				name: "Ice",
 				duration: -6,
@@ -242,19 +481,21 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 		},
 		{name: "Rainstorm", prerequisite: "ApprenticeWater", tags: ["water", "aoe", "dot", "offense", "utility", "denial"], noUniqueHits: true, noise: 3, sfx: "FireSpell", school: "Elements", manacost: 4.5,
 			components: ["Verbal"], level:1, type:"inert", onhit:"aoe", delay: 3, power: 3.5, time: 2, range: 2.5, size: 3, aoe: 1.5, lifetime: 1, damage: "acid",
+			pierceEnemies: true,
 			effectTileDurationMod: 8, effectTile: {
 				name: "Water",
 				duration: 14,
 			}
 		},
-		{name: "Freeze", color: "#92e8c0", tags: ["ice", "utility", "offense"], prerequisite: "ApprenticeIce", sfx: "Freeze", school: "Elements", manacost: 3, components: ["Verbal"], noTargetPlayer: true, mustTarget: true, level:1, type:"hit", onhit:"instant", evadeable: false, time:6, power: 0, range: 1.5, size: 1, lifetime: 1, aoe: 0.5, damage: "ice"},
 		{name: "FlashFreeze", color: "#92e8c0", tags: ["ice", "utility", "offense", "aoe"], prerequisite: "Freeze", sfx: "Freeze", school: "Elements", manacost: 5, components: ["Verbal"],
 			level:2, type:"hit", onhit:"instant", evadeable: false, power: 2.0, range: 2.99, size: 3, lifetime: 1, aoe: 1.5, damage: "ice",
 			events: [{type: "ElementalOnDrench", trigger: "bulletHitEnemy", damage: "ice", time: 8, power: 0.0},]},
-		{name: "Sleet", color: "#92e8c0", tags: ["ice", "aoe", "dot", "offense", "denial"], prerequisite: "ApprenticeIce", effectTileDurationMod: 10, effectTile: {
-			name: "Ice",
-			duration: 20,
-		}, hitSpin: 0.5, bulletSpin: 0.25, noUniqueHits: true, noise: 8, sfx: "FireSpell", school: "Elements", manacost: 10, components: ["Legs"], level:1, type:"inert", onhit:"aoe", delay: 1, power: 1, range: 4.5, size: 5, aoe: 2.9, lifetime: 15, time: 2, damage: "frost"},
+		{name: "Sleet", color: "#92e8c0", tags: ["ice", "aoe", "dot", "offense", "denial"], prerequisite: "ApprenticeIce", effectTileDurationMod: 10,
+			effectTile: {
+				name: "Ice",
+				duration: 20,
+			}, hitSpin: 0.5, bulletSpin: 0.25, noUniqueHits: true, noise: 8, sfx: "FireSpell", school: "Elements", manacost: 10, components: ["Legs"], level:1, pierceEnemies: true,
+			type:"inert", onhit:"aoe", delay: 1, power: 1, range: 4.5, size: 5, aoe: 2.9, lifetime: 15, time: 2, damage: "frost"},
 		{name: "WindBlast", tags: ["air", "bolt", "offense", "utility"],
 			prerequisite: "ApprenticeAir", sfx: "FireSpell", school: "Elements", manacost: 2.5, components: ["Arms"], level:1, type:"bolt",
 			projectileTargeting:true, onhit:"", power: 1.0, time: 2, delay: 0, range: 2.99, damage: "stun", speed: 3, hitSpin: 1, bulletSpin: 1,
@@ -271,25 +512,51 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 		{name: "Firebolt", tags: ["fire", "bolt", "offense"], prerequisite: "ApprenticeFire", sfx: "FireSpell", school: "Elements", manacost: 3, components: ["Arms"], level:1, type:"bolt",
 			bulletColor: 0xb83716, bulletLight: 4,
 			hitColor: 0xe64539, hitLight: 6,
+			hideWarnings: true,
 			projectileTargeting:true, onhit:"", power: 4.0, delay: 0, range: 50, damage: "fire", speed: 3, playerEffect: {name: "Damage"},
 			effectTileDurationMod: 3, effectTile: {
 				name: "Ember",
 				duration: 3,
 			}}, // Throws a fireball in a direction that moves 1 square each turn
-		{name: "Fireball", prerequisite: "Firebolt", tags: ["fire", "bolt", "aoe", "offense"], noise: 3, sfx: "FireSpell", school: "Elements", manacost: 7, components: ["Arms"], level:1,
-			upcastFrom: "Firebolt", upcastLevel: 2,
-			bulletColor: 0xb83716, bulletLight: 5.5,
+		{name: "Fireblast", prerequisite: "Firebolt", tags: ["fire", "bolt", "aoe", "offense"], noise: 4, sfx: "FireSpell", school: "Elements", manacost: 6, components: ["Arms"], level:1,
+			upcastFrom: "Firebolt", upcastLevel: 1,
+			hideWarnings: true,
+			bulletColor: 0xb83716, bulletLight: 6.5,
 			hitColor: 0xe64539, hitLight: 8,
 			landsfx: "Lightning",
-			type:"bolt", projectileTargeting:true, onhit:"aoe", power: 6, delay: 0, range: 50, aoe: 1.5, size: 3, lifetime:1, damage: "fire", speed: 2, playerEffect: {name: "Damage"},
+			type:"bolt", projectileTargeting:true, onhit:"aoe", power: 5, delay: 0, range: 50, aoe: 1.5, size: 3, lifetime:1, damage: "fire", speed: 2, playerEffect: {name: "Damage"},
 			effectTileDurationModTrail: 8, effectTileTrail: {
-				name: "Smoke",
+				name: "Ember",
 				duration: 2,
 			},
 			effectTileDurationMod: 6, effectTile: {
 				name: "Ember",
-				duration: 4,
+				duration: 5,
 			}}, // Throws a fireball in a direction that moves 1 square each turn
+
+		{name: "Fireball", prerequisite: "Fireblast", tags: ["fire", "bolt", "aoe", "offense"], noise: 8, sfx: "FireSpell", school: "Elements", manacost: 11, components: ["Arms"], level:1,
+			upcastFrom: "Firebolt", upcastLevel: 2,
+			bulletColor: 0xb83716, bulletLight: 8,
+			hitColor: 0xe64539, hitLight: 11,
+			landsfx: "Lightning",
+			hideWarnings: true,
+			type:"bolt", projectileTargeting:true, onhit:"aoe", power: 9, delay: 0, range: 50, aoe: 2.8, size: 5, lifetime:1, damage: "fire", speed: 1.5, playerEffect: {name: "Damage"},
+			effectTileDurationModTrail: 12, effectTileTrail: {
+				name: "Ember",
+				duration: 4,
+			},
+			effectTileDurationMod: 8, effectTile: {
+				name: "Ember",
+				duration: 7,
+			}}, // Throws a fireball in a direction that moves 1 square each turn
+
+		{name: "Freeze", color: "#92e8c0", tags: ["ice", "utility", "offense"], prerequisite: "ApprenticeIce", sfx: "Freeze", school: "Elements", manacost: 3, components: ["Verbal"],
+			effectTileDurationMod: 10, effectTile: {
+				name: "Ice",
+				duration: 20,
+			},
+			noTargetPlayer: true, mustTarget: true, level:1, type:"hit", onhit:"instant", evadeable: false, time:6, power: 3, range: 1.5, size: 1, lifetime: 1, aoe: 0.5, damage: "frost",
+			events: [{type: "ElementalOnSlowOrBindOrDrench", trigger: "bulletHitEnemy", damage: "ice", time: 6, power: 0},]},
 		{name: "Icebolt", tags: ["ice", "bolt", "offense"], prerequisite: "ApprenticeIce", sfx: "MagicSlash", hitsfx: "Freeze", school: "Elements", manacost: 4, components: ["Arms"], level:1, type:"bolt",
 			bulletColor: 0x92e4e8, bulletLight: 3,
 			hitColor: 0x92e4e8, hitLight: 5,
@@ -355,12 +622,13 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 			trailPower: 0, trailLifetime: 1.1, trailTime: 4, trailDamage:"inert", trail:"lingering", trailChance: 1.0, playerEffect: {name: "Shock", time: 1}},
 		{name: "Fissure", tags: ["fire", "denial", "dot", "aoe", "offense"], noUniqueHits: true, prerequisite: "Ignite", noise: 7, sfx: "FireSpell", school: "Elements", manacost: 8, components: ["Legs"], level:1, type:"bolt", piercing: true, projectileTargeting:true, nonVolatile: true, onhit:"", power: 5.5, delay: 0, range: 4, speed: 4, size: 1, damage: "fire",
 			trailPower: 1.5, trailLifetime: 6, piercingTrail: true, trailDamage:"fire", trail:"lingering", trailChance: 1, playerEffect: {name: "DamageNoMsg", hitTag: "Fissure", time: 1, damage:"fire", power: 3}},
-		//{name: "Shield", sfx: "MagicSlash", school: "Elements", manacost: 1, components: ["Legs"], noTargetEnemies: true, noTargetPlayer: true, level:1, type:"inert", block: 10, onhit:"", power: 0, delay: 2, range: 1.5, size: 1, damage: ""}, // Creates a shield that blocks projectiles for 1 turn
+		//{name: "Shield", sfx: "MagicSlash", school: "Elements", manacost: 1, components: ["Legs"], noTargetEnemies: true, noTargetPlayer: true, level:1, type:"inert", block: 10, onhit:"", power: 0,delay: 2, range: 1.5, size: 1, damage: ""}, // Creates a shield that blocks projectiles for 1 turn
 		{name: "Shield", tags: ["shield", "defense"], prerequisite: "ApprenticeEarth", sfx: "MagicSlash", school: "Elements", manacost: 4, components: ["Verbal"], mustTarget: true, level:1, type:"buff",
 			buffs: [
 				{id: "Shield", type: "SpellResist", aura: "#73efe8", duration: 50, power: 3.0, player: true, enemies: true, tags: ["defense", "damageTaken"]},
 			], onhit:"", time:50, power: 0, range: 2, size: 1, damage: ""},
-		{name: "GreaterShield", tags: ["shield", "defense", "utility"], prerequisite: "Shield", spellPointCost: 1, sfx: "MagicSlash", school: "Elements", manacost: 1, components: ["Verbal"], noTargetEnemies: true, noTargetPlayer: true, level:1, type:"inert", block: 20, onhit:"", power: 0, delay: 5, range: 2.99, size: 1, damage: ""}, // Creates a shield that blocks projectiles for 5 turns
+		{name: "GreaterShield", tags: ["shield", "defense", "utility"], prerequisite: "Shield", spellPointCost: 1, sfx: "MagicSlash", school: "Elements", manacost: 1, components: ["Verbal"],
+			noTargetEnemies: true, noTargetPlayer: true, level:1, type:"inert", block: 20, onhit:"", power: 0, delay: 5, range: 2.99, size: 1, damage: ""}, // Creates a shield that blocks projectiles for 5 turns
 		{name: "IceBreath", tags: ["ice", "denial", "offense", "utility", "aoe"], prerequisite: "Hailstorm", sfx: "MagicSlash", hitsfx: "Freeze", school: "Elements", manacost: 8,
 			upcastFrom: "Hailstorm", upcastLevel: 1,
 			components: ["Verbal"], level:1, type:"inert", onhit:"lingering", time: 1, delay: 1, range: 3, size: 3, aoe: 1.5, lifetime: 10, power: 5, lifetimeHitBonus: 5, damage: "ice"}, // Creates a huge pool of slime, slowing enemies that try to enter. If you step in it, you have a chance of getting trapped!
@@ -401,15 +669,15 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 			components: ["Verbal"], noTargetEnemies: true, noTargetPlayer: true, level:1, type:"hit", noSprite: true, onhit:"summon",
 			summon: [{name: "StaticSphere", count: 1, time: 12, bound: true}], power: 1.5, time: 12, delay: -1, range: 6, size: 1, aoe: 0, lifetime: 1, damage: "inert"},
 
-		{name: "LightningRune", tags: ["electric", "offense", "defense", "utility"], prerequisite: "ApprenticeLightning", noise: 0, sfx: "Fwoosh", school: "Elements", spellPointCost: 1, manacost: 2,
+		{name: "LightningRune", castCondition: "noStationaryBullet", tags: ["electric", "offense", "defense", "utility", "trap", "trapReducible"], prerequisite: "ApprenticeLightning", noise: 0, sfx: "Fwoosh", school: "Elements", spellPointCost: 1, manacost: 2,
 			components: ["Legs"], noTargetPlayer: true, CastInWalls: false, level:1, type:"inert",
 			onhit:"aoe", time: 5, delay: 3, power: 4.5, range: 2.99, size: 1, lifetime: 1, damage: "inert",
 			spellcast: {spell: "LightningRuneStrike", target: "onhit", directional:false, offset: false}, channel: 5},
-		{name: "FlameRune", tags: ["fire", "offense", "defense"], prerequisite: "ApprenticeFire", noise: 0, sfx: "Fwoosh", school: "Elements", spellPointCost: 1, manacost: 2,
+		{name: "FlameRune", castCondition: "noStationaryBullet", tags: ["fire", "offense", "defense", "trap", "trapReducible"], prerequisite: "ApprenticeFire", noise: 0, sfx: "Fwoosh", school: "Elements", spellPointCost: 1, manacost: 2,
 			components: ["Legs"], noTargetPlayer: true, CastInWalls: false, level:1, type:"inert",
 			onhit:"aoe", delay: 3, power: 5.5, range: 2.99, size: 1, lifetime: 1, damage: "inert",
 			spellcast: {spell: "FlameRuneStrike", target: "onhit", directional:false, offset: false}, channel: 5},
-		{name: "FreezeRune", tags: ["ice", "offense", "defense", "utility"], prerequisite: "ApprenticeIce", noise: 0, sfx: "Fwoosh", school: "Elements", spellPointCost: 1, manacost: 5,
+		{name: "FreezeRune", castCondition: "noStationaryBullet", tags: ["ice", "offense", "defense", "utility", "trap", "trapReducible"], prerequisite: "ApprenticeIce", noise: 0, sfx: "Fwoosh", school: "Elements", spellPointCost: 1, manacost: 5,
 			components: ["Legs"], noTargetPlayer: true, CastInWalls: false, level:1, type:"inert",
 			onhit:"aoe", time: 30, delay: 3, power: 3, range: 2.99, size: 1, lifetime: 1, damage: "inert",
 			spellcast: {spell: "FreezeRuneStrike", target: "onhit", directional:false, offset: false}, channel: 5},
@@ -449,26 +717,24 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 		{goToPage: 2, name: "ApprenticeLatex", tags: ["magic"], autoLearn: ["SlimeBall"], hideLearned: true, hideUnlearnable: true, school: "Conjure", manacost: 0, spellPointCost: 1, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
 		{goToPage: 2, name: "ApprenticePhysics", tags: ["magic"], autoLearn: ["Wall"], hideLearned: true, hideUnlearnable: true, school: "Conjure", manacost: 0, spellPointCost: 1, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
 
-		{name: "MPUp1", hide: true, school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
-		{name: "MPUp2", hide: true, school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
-		{name: "MPUp3", hide: true, school: "Any", manacost: 0, components: [], level:4, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
-		{name: "SummonUp1", hide: true, tags: ["upgrade"], hideLearned: true, hideUnlearnable: true, school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
-		{name: "SummonUp2", hide: true, tags: ["upgrade"], hideLearned: false, hideUnlearnable: true, prerequisite: "SummonUp1", school: "Any", manacost: 0, components: [], level:2, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
 		{name: "Bomb", color: "#ff0000", prerequisite: "ApprenticeSummon", tags: ["aoe", "offense"], noise: 5, sfx: "FireSpell", school: "Conjure", manacost: 5, components: ["Verbal"], level:1,
 			effectTileDurationMod: 7, hitSpin: 0.2, effectTile: {
 				name: "Smoke",
 				duration: -1,
-			}, type:"inert", onhit:"aoe", time: 3, delay: 5, power: 10, range: 3, size: 3, aoe: 1.5, lifetime: 1, damage: "fire", playerEffect: {name: "Damage"}, channel: 1},
+			}, type:"inert", onhit:"aoe", time: 3, delay: 5, power: 10, range: 3, size: 3, aoe: 1.5, lifetime: 1, damage: "stun", playerEffect: {name: "Damage"}, channel: 1},
 
 		{name: "FeatherCloud", color: "#ffffff", prerequisite: "TickleCloud", tags: ["tickle", "aoe", "dot", "offense", "utility", "denial"], noUniqueHits: true, noise: 1, landsfx: "Tickle", hitsfx: "Tickle", school: "Elements", manacost: 4,
-			components: ["Arms"], hitSpin: 0.7, bulletSpin: 0.4, level:1, type:"inert", onhit:"aoe", delay: 1, power: 2.0, distract: 6.0, range: 2.5, size: 3, aoe: 1, lifetime: 3, damage: "tickle", playerEffect: {name: "Damage"},
+			components: ["Arms"], hitSpin: 0.7, bulletSpin: 0.4, level:1, type:"inert", onhit:"aoe", delay: 1, power: 2.0, distract: 6.0, range: 2.5, size: 3, aoe: 1, pierceEnemies: true,
+			lifetime: 3, damage: "tickle", playerEffect: {name: "Damage"},
 		},
 		{name: "TickleCloud", color: "#ffffff", prerequisite: "ApprenticeSummon", tags: ["tickle", "aoe", "dot", "offense", "utility", "denial"], piercing: true, noUniqueHits: true, noise: 1, landsfx: "Tickle", hitsfx: "Tickle", school: "Elements", manacost: 2,
 			components: ["Arms"], hitSpin: 1, bulletSpin: 0.4, level:1, type:"dot", onhit:"aoe", delay: 9, power: 0.5, range: 3.99, size: 1, aoe: 0.5, lifetime: 1, damage: "tickle", playerEffect: {name: "Damage"},
 		},//, distractEff: 2.0
-		{name: "Snare", color: "#ff8899", prerequisite: "ApprenticeRope", tags: ["rope", "binding", "denial", "utility", "offense"], sfx: "FireSpell",
-			school: "Conjure", manacost: 2, components: ["Legs"], noTargetEnemies: true, level:1, type:"inert", onhit:"lingering", lifetime:90, bindType: "Rope",
-			time: 8, bind: 15, delay: 5, range: 1, damage: "stun", playerEffect: {name: "MagicRope", time: 3}}, // Creates a magic rope trap that creates magic ropes on anything that steps on it. They are invisible once placed. Enemies get rooted, players get fully tied!
+		{name: "Snare", color: "#ff8899", castCondition: "noStationaryBullet", tags: ["rope", "binding", "denial", "utility", "offense", "trap", "trapReducible"],
+			prerequisite: "ApprenticeRope", noise: 0, sfx: "Fwoosh", school: "Conjure", spellPointCost: 1, manacost: 2,
+			components: ["Legs"], noTargetPlayer: true, CastInWalls: false, level:1, type:"inert",
+			onhit:"aoe", delay: 3, power: 5.5, range: 2.99, size: 1, lifetime: 1, damage: "inert",
+			spellcast: {spell: "RopeRuneStrike", target: "onhit", directional:false, offset: false}, channel: 5},
 
 		{name: "LeatherBurst", prerequisite: "ApprenticeLeather", tags: ["buff", "offense", "binding"], sfx: "MagicSlash", school: "Conjure", manacost: 0, components: [], level:1, passive: true, type:"",
 			events: [{type: "LeatherBurst", trigger: "playerCast", power: 3}]},
@@ -526,12 +792,15 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 		}, bulletSpin: 1, school: "Conjure", manacost: 3.5, components: ["Verbal"], level:1, type:"inert", onhit:"aoe", delay: 1, power: 3, bind: 4, time: 6, range: 3.5, size: 3, aoe: 1.5, lifetime: 1, damage: "chain",  bindType: "Rope", playerEffect: {name: "MagicRope", time: 4}},
 		{name: "Slime", color: "#ff00ff", prerequisite: "SlimeSplash", tags: ["latex", "slime", "aoe", "offense"], landsfx: "MagicSlash", school: "Conjure", manacost: 4, components: ["Legs"], level:1, type:"inert",
 			upcastFrom: "SlimeSplash", upcastLevel: 1,
+			requireLOS: true,
 			effectTileDurationMod: 12, effectTile: {
 				name: "Slime",
 				duration: 8,
 			},
 			onhit:"lingering", time: 4, delay: 1, range: 3.5, size: 3, aoe: 1.5, lifetime: 3, power: 4, damage: "glue", playerEffect: {name: "SlimeTrap", time: 3}}, // Creates a huge pool of slime, slowing enemies that try to enter. If you step in it, you have a chance of getting trapped!
-		{name: "SlimeSplash", color: "#ff00ff", prerequisite: "ApprenticeLatex", tags: ["latex", "slime", "aoe", "offense"], landsfx: "MagicSlash", school: "Conjure", manacost: 1.4, components: ["Legs"], level:1, type:"inert",
+		{name: "SlimeSplash", color: "#ff00ff", prerequisite: "ApprenticeLatex", tags: ["latex", "slime", "aoe", "offense"], landsfx: "MagicSlash", school: "Conjure",
+			manacost: 1.4, components: ["Legs"], level:1, type:"inert",
+			requireLOS: true,
 			effectTileDurationMod: 4, effectTile: {
 				name: "Slime",
 				duration: 6,
@@ -539,6 +808,7 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 			onhit:"lingering", time: 0, delay: 1, range: 2.5, size: 1, aoe: 1.01, lifetime: 1, power: 1, damage: "glue", playerEffect: {name: "SlimeTrap", time: 3}}, // Creates a huge pool of slime, slowing enemies that try to enter. If you step in it, you have a chance of getting trapped!
 		{name: "SlimeEruption", color: "#ff00ff", prerequisite: "Slime", tags: ["latex", "slime", "aoe", "denial", "offense"], landsfx: "MagicSlash", school: "Conjure", manacost: 7, components: ["Legs"], level:1, type:"inert",
 			upcastFrom: "SlimeSplash", upcastLevel: 2,
+			requireLOS: true,
 			effectTileDurationMod: 16, effectTile: {
 				name: "Slime",
 				duration: 8,
@@ -557,7 +827,7 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 
 		},
 		{name: "SlimeBall", color: "#ff00ff", prerequisite: "ApprenticeLatex", tags: ["latex", "slime", "denial", "bolt", "offense"], noise: 1, sfx: "FireSpell", school: "Conjure", manacost: 4, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"", time: 3,  power: 4, delay: 0, range: 50, damage: "glue", speed: 2,
-			trailPower: 4, trailLifetime: 10, trailTime: 3, trailDamage:"glue", trail:"lingering", trailChance: 1.0,
+			trailPower: 4, trailLifetime: 10, trailTime: 3, trailDamage:"glue", trail:"lingering", trailChance: 1.0, playerEffect: {name: "Slime", time: 3}, trailPlayerEffect: {name: "na"},
 			effectTileDurationModTrail: 4, effectTileTrail: {
 				name: "Slime",
 				duration: 4,
@@ -566,7 +836,10 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 			manacost: 3, components: ["Verbal"], requireLOS: true, noTargetEnemies: true, level:1, type:"hit", onhit:"teleport", delay: 1, lifetime:1, range: 3, damage: ""}, // A quick blink which takes effect instantly, but requires legs to be free
 		{name: "Blink", prerequisite: "Leap", tags: ["physics", "utility", "defense"], sfx: "Teleport", school: "Conjure", upcastFrom: "Leap", upcastLevel: 2,
 			manacost: 6, components: ["Verbal"], noTargetEnemies: true, level:1, type:"hit", onhit:"teleport", delay: 1, lifetime:1, range: 5.99, damage: ""}, // A slow blink with short range, but it uses verbal components
-		{name: "Wall", prerequisite: "ApprenticePhysics", tags: ["summon", "utility", "defense", "physics"], sfx: "MagicSlash", school: "Conjure", manacost: 3, components: ["Legs"], noTargetEnemies: true, noTargetPlayer: true, piercing: true, level:1, type:"hit", noSprite: true, onhit:"summon", summon: [{name: "Wall", count: 1, time: 10, bound: true}], power: 0, time: 10, delay: -1, range: 6, size: 1, aoe: 0.5, lifetime: 1, damage: "fire"},
+		{name: "Wall", prerequisite: "ApprenticePhysics", tags: ["summon", "utility", "defense", "physics"], sfx: "MagicSlash", school: "Conjure",
+			type:"special", special: "Wall",
+			onhit:"", time:8, power: 0, range: 6, size: 1, damage: "",
+			manacost: 3, components: ["Legs"], noTargetEnemies: true, noTargetPlayer: true, piercing: true, level:1, noSprite: true,},
 		{name: "Ally", prerequisite: "ApprenticeSummon", tags: ["summon", "offense"], sfx: "MagicSlash", school: "Conjure", manacost: 8, components: ["Legs"], noTargetEnemies: true, noTargetPlayer: true, piercing: true, level:1, type:"hit", onhit:"summon", noSprite: true, summon: [{name: "Ally", count: 1, time: 9999, bound: true}], power: 0, time: 9999, delay: -1, range: 2.9, size: 1, aoe: 0.5, lifetime: 1, damage: "fire"},
 		{name: "FireElemental", prerequisite: "ApprenticeSummon", tags: ["fire", "summon", "offense"], sfx: "MagicSlash", school: "Conjure", manacost: 15, components: ["Verbal"], noTargetEnemies: true, noTargetPlayer: true, piercing: true, level:1, type:"hit", noSprite: true, onhit:"summon", summon: [{name: "FireElemental", count: 1, time: 9999, bound: true}], power: 0, time: 9999, delay: -1, range: 3.5, size: 1, aoe: 0.5, lifetime: 1, damage: "inert"},
 		{name: "WaterMote", prerequisite: "ApprenticeSummon", tags: ["water", "summon", "offense"], sfx: "MagicSlash", school: "Conjure", manacost: 15, components: ["Arms"], noTargetEnemies: true, noTargetPlayer: true, piercing: true, level:1, type:"hit", noSprite: true, onhit:"summon", summon: [{name: "WaterMote", count: 1, time: 9999, bound: true}], power: 0, time: 9999, delay: -1, range: 3.5, size: 1, aoe: 0.5, lifetime: 1, damage: "inert"},
@@ -578,7 +851,12 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 		{noAggro: true, buff: true, heal: true, name: "Heal2", prerequisite: "ApprenticeSummon", sfx: "MagicSlash", school: "Conjure", manacost: 3, components: ["Verbal"], noTargetPlayer: true, mustTarget: true, level:1, type:"hit",
 			onhit:"heal", time:2, lifetime: 1, delay: 1, power: 4.5, aoe: 0.9, range: 7, size: 1, damage: "inert"},
 		{name: "FloatingWeapon", prerequisite: "ApprenticePhysics", tags: ["buff", "offense", "physics"], sfx: "MagicSlash", school: "Conjure", manacost: 2, components: [], level:3, type:"passive",
-			events: [{type: "FloatingWeapon", trigger: "playerAttack"}, {type: "HandsFree", trigger: "getWeapon"}, {type: "HandsFree", trigger: "calcDamage"}]},
+			events: [
+				{type: "FloatingWeapon", trigger: "playerAttack"},
+				{type: "HandsFree", trigger: "getWeapon"},
+				{type: "HandsFree", trigger: "calcDamage"},
+				{type: "ArmsFree", trigger: "calcDamage"},
+			]},
 		{name: "Lockdown", prerequisite: "ApprenticeMetal", tags: ["metal", "lock", "binding", "utility", "offense"], sfx: "MagicSlash", school: "Conjure", manacost: 4.5, components: ["Verbal"], mustTarget: true, level:1,
 			/*buffs: [
 				{id: "Lockdown", aura: "#a96ef5", type: "Locked", duration: 8, power: 1.0, player: true, enemies: true, tags: ["lock", "debuff"]},
@@ -615,6 +893,13 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 		{name: "CommandVibrate", prerequisite: "CommandWord", tags: ["command", "offense", "aoe", "sexy"], sfx: "MagicSlash", school: "Conjure", manacost: 4.5, components: ["Verbal"], level:1,
 			type:"special", special: "CommandVibrate",
 			onhit:"", time:30, power: 5, range: 3.5, size: 1, aoe: 3.5, damage: "charm"},
+		{name: "CommandVibrateVibeRemote", prerequisite: "CommandWord", tags: ["command", "offense", "aoe", "sexy"], sfx: "MagicSlash", school: "Conjure", manacost: 0, components: ["Verbal"], level:2,
+			type:"special", special: "CommandVibrateLV2",
+			onhit:"", time:30, power: 5, range: 3.5, size: 1, aoe: 3.5, damage: "charm"},
+		{name: "CommandVibrateBagOfGoodies", prerequisite: "CommandWord", tags: ["command", "offense", "aoe", "sexy"], sfx: "MagicSlash", school: "Conjure", manacost: 0, components: ["Verbal"], level:1,
+			chargecost: 0.015,
+			type:"special", special: "CommandVibrate",
+			onhit:"", time:15, power: 5, range: 3.5, size: 1, aoe: 2.5, damage: "charm"},
 		{name: "CommandOrgasm", prerequisite: "CommandVibrate", tags: ["command", "offense", "aoe", "sexy"], sfx: "MagicSlash", school: "Conjure", manacost: 4.5, components: ["Verbal"], level:1,
 			type:"special", special: "CommandOrgasm",
 			onhit:"", time:0, power: 5, range: 7, size: 1, aoe: 4.99, damage: "charm"},
@@ -622,6 +907,7 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 			type:"special", special: "CommandRelease",
 			onhit:"", time:0, power: 10.0, range: 2.5, size: 1, aoe: 1.5, damage: "inert"},
 		KDCommandWord,
+		KDBondageSpell,
 
 		{name: "CommandSlime", prerequisite: "ApprenticeLatex", tags: ["command", "slime", "defense"], sfx: "MagicSlash", school: "Conjure", manacost: 9, components: ["Verbal"], level:1,
 			type:"special", special: "CommandSlime",
@@ -662,6 +948,7 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 
 		{name: "Coalesce", prerequisite: "Spread", tags: ["latex", "slime", "aoe", "utility", "offense"], sfx: "MagicSlash", school: "Conjure", manacost: 4, components: ["Verbal"], level:1,
 			type:"special", special: "Coalesce",
+			requireLOS: true,
 			onhit:"", time:0, power: 0.5, range: 3.5, size: 1, aoe: 2.5, damage: "glue"},
 
 		{name: "ElasticGrip", prerequisite: "ApprenticeLatex", tags: ["latex", "utility"], sfx: "FireSpell", school: "Conjure", manacost: 2, components: ["Arms"], level:1,
@@ -683,6 +970,7 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 
 		{name: "Spread", prerequisite: "ApprenticeLatex", tags: ["slime", "latex", "utility",], sfx: "MagicSlash", school: "Conjure", manacost: 1.0, components: ["Verbal"], level:1,
 			type:"special", special: "Spread",
+			requireLOS: true,
 			onhit:"", time:0, power: 0, range: 3.99, size: 1, aoe: 2, damage: "inert"},
 
 		{name: "Animate", prerequisite: "Awaken", tags: ["slime", "latex", "summon"], sfx: "MagicSlash", school: "Conjure", manacost: 6, components: ["Verbal"], level:1,
@@ -729,35 +1017,9 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 		{goToPage: 3, name: "ApprenticeProjection", tags: ["magic"], autoLearn: ["Decoy"], hideLearned: true, hideUnlearnable: true, school: "Illusion", manacost: 0, spellPointCost: 1, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
 		{goToPage: 3, name: "ApprenticeKnowledge", tags: ["magic"], autoLearn: ["TrueSteel"], hideLearned: true, hideUnlearnable: true, school: "Illusion", manacost: 0, spellPointCost: 1, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
 
-		{name: "Athlete", tags: ["stamina", "utility"], school: "Illusion", spellPointCost: 1, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{type: "Buff", trigger: "tick", power: 0.67, buffType: "SprintEfficiency"},
-		]},
-		{name: "Sneaky", tags: ["buff", "utility"], school: "Illusion", spellPointCost: 1, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{type: "Buff", trigger: "tick", power: 0.5, prereq: "Waiting", buffType: "Sneak", mult: 1, tags: ["SlowDetection", "move", "cast"]},
-		]},
-		{name: "Evasive1", tags: ["buff", "defense"], school: "Illusion", spellPointCost: 1, hideLearned: true, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{type: "Buff", trigger: "tick", power: 0.1, buffType: "Evasion"},
-		]},
-		{name: "Evasive2", tags: ["buff", "defense"], school: "Illusion", spellPointCost: 1, hideLearned: true, prerequisite: "Evasive1", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{type: "Buff", trigger: "tick", power: 0.15, buffType: "Evasion"},
-		]},
-		{name: "Evasive3", tags: ["buff", "defense"], school: "Illusion", spellPointCost: 1, prerequisite: "Evasive2", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{type: "Buff", trigger: "tick", power: 0.25, buffType: "Evasion"},
-		]},
-		{name: "CriticalStrike", tags: ["damage", "offense", "buff"], school: "Illusion", spellPointCost: 2, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{trigger: "beforePlayerAttack", type: "CritBoost", prereq: "damageType", kind: "melee", power: 0.5},
-			{trigger: "calcDisplayDamage", type: "CritBoost", prereq: "damageType", kind: "melee", power: 0.5},
-		]},
-		{name: "Vault", tags: ["damage", "utility", "buff"], school: "Illusion", spellPointCost: 1, manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert", events: [
-			{trigger: "canSprint", type: "Vault"},
-		]},
-
 		{name: "Analyze", prerequisite: "ApprenticeKnowledge", tags: ["buff", "utility", "knowledge"], school: "Illusion", manacost: 2.5, defaultOff: true, cancelAutoMove: true, costOnToggle: true, components: [], level:1, type:"passive",
 			events: [{type: "Analyze", trigger: "toggleSpell", power: 5, time: 20}, {type: "Analyze", trigger: "tick", power: 5, time: 20}]},
 
-		{name: "APUp1", hide: true, school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
-		{name: "APUp2", hide: true, school: "Any", manacost: 0, components: [], level:1, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
-		{name: "APUp3", hide: true, school: "Any", manacost: 0, components: [], level:4, passive: true, type:"", onhit:"", time: 0, delay: 0, range: 0, lifetime: 0, power: 0, damage: "inert"},
 		{name: "Dagger", prerequisite: "ApprenticeShadow", tags: ["bolt", "shadow", "offense"], sfx: "MagicSlash", school: "Illusion", manacost: 2, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, noDoubleHit: true, piercing: true, onhit:"", power: 2.5, time: 0, delay: 0, range: 6, damage: "cold", speed: 4, playerEffect: {name: "Damage"}}, // Throws a fireball in a direction that moves 1 square each turn
 		{name: "Flash", color: "#ffffff", prerequisite: "ApprenticeLight", tags: ["light", "utility", "aoe", "offense"], noise: 8, sfx: "FireSpell",
 			hitColor: 0xffffff, hitLight: 6,
@@ -779,11 +1041,18 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 			name: "Smoke",
 			duration: 8,
 		}}, // Creates a shroud. Enemies within are hard to hit with melee attacks.
-		{name: "Invisibility", prerequisite: "ApprenticeMystery", tags: ["buff", "utility", "stealth", "defense"], sfx: "Invis", school: "Illusion", manacost: 8, components: ["Verbal"], mustTarget: true, level:1, type:"buff",
+		{name: "Invisibility", prerequisite: "ApprenticeMystery", tags: ["buff", "utility", "stealth", "defense"], sfx: "Invis", school: "Illusion", manacost: 6, components: ["Verbal"], mustTarget: true, level:1, type:"buff",
 			buffs: [
-				{id: "Invisibility", aura: "#888888", type: "Sneak", duration: 10, power: 10.0, player: true, enemies: true, tags: ["invisibility"]},
-				{id: "Invisibility2", type: "SlowDetection", duration: 14, power: 0.5, player: true, enemies: false, tags: ["invisibility"]},
-			], onhit:"", time:14, power: 0, range: 2, size: 1, damage: ""},
+				{id: "Invisibility", aura: "#888888", type: "Sneak", duration: 12, power: 15.0, player: true, enemies: true, tags: ["invisibility"]},
+				{id: "Invisibility2", type: "SlowDetection", duration: 12, power: 0.5, player: true, enemies: false, tags: ["invisibility"]},
+			], onhit:"", time:12, power: 0, range: 2, size: 1, damage: ""},
+		{name: "GreaterInvisibility", prerequisite: "Invisibility", tags: ["buff", "utility", "stealth", "defense"], sfx: "Invis", school: "Illusion", manacost: 10, components: ["Verbal"], mustTarget: true, level:1, type:"buff",
+			upcastFrom: "Invisibility", upcastLevel: 1,
+			buffs: [
+				{id: "Invisibility", aura: "#888888", type: "Sneak", duration: 15, power: 20.0, player: true, enemies: true, tags: ["invisibility"]},
+				{id: "Invisibility2", type: "SlowDetection", duration: 15, power: 0.5, player: true, enemies: false, tags: ["invisibility"]},
+				{id: "GreaterInvisibility", aura: "#a45fd7", type: "Invisible", duration: 15, power: 1.5, player: true, currentCount: -1, maxCount: 1, tags: ["invisibility", "attack", "cast"]}
+			], onhit:"", time:15, power: 0, range: 2, size: 1, damage: ""},
 		{name: "TrueSteel", prerequisite: "ApprenticeKnowledge", tags: ["offense", "stealth", "knowledge"], sfx: "MagicSlash", school: "Illusion", manacost: 2, components: ["Arms"], noTargetPlayer: true, mustTarget: true, level:1, type:"hit", onhit:"instant", evadeable: false, time:1, power: 4, range: 1.5, size: 1, lifetime: 1, aoe: 0.5, damage: "slash",
 			events: [{trigger: "beforeDamageEnemy", type: "MultiplyDamageStealth", power: 2.5, humanOnly: true}]
 		},
@@ -799,21 +1068,37 @@ let KinkyDungeonSpellList = { // List of spells you can unlock in the 3 books. W
 		{name: "ShadowWarrior", prerequisite: "ApprenticeShadow", tags: ["summon", "offense", "shadow", "dot"], sfx: "MagicSlash", school: "Illusion", manacost: 10, components: ["Verbal"], noTargetEnemies: true, noTargetPlayer: true, level:1, type:"hit", noSprite: true, onhit:"summon", summon: [{name: "ShadowWarrior", count: 1, time: 12}], power: 6, time: 12, delay: -1, range: 3.5, size: 1, aoe: 0, lifetime: 1, damage: "inert"},
 		{name: "Corona", color: "#ffffff",
 			bulletColor: 0xffff77, bulletLight: 5,
-			tags: ["light", "offense"], prerequisite: "Light", noise: 4, sfx: "MagicSlash", school: "Illusion", spellPointCost: 1, manacost: 7, components: ["Arms"], projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 2, power: 12, range: 8, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert",
+			tags: ["light", "offense"], prerequisite: "Light", sfx: "MagicSlash", school: "Illusion", spellPointCost: 1, manacost: 7, components: ["Arms"], projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 2, power: 12, range: 8, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert",
 			spellcast: {spell: "CoronaBeam", target: "target", directional:true, offset: false}, channel: 2},
 		{name: "TrueSight", prerequisite: "ApprenticeKnowledge", tags: ["buff", "utility", "knowledge"], school: "Illusion", manacost: 1, defaultOff: true, cancelAutoMove: true, components: [], level:1, type:"passive", events: [
 			{type: "TrueSight", trigger: "vision"},
 			{type: "Blindness", trigger: "calcStats", power: -1},
 			{type: "AccuracyBuff", trigger: "tick", power: 0.4},
 		]},
-		{name: "EnemySense", prerequisite: "ApprenticeKnowledge", tags: ["buff", "utility", "knowledge"], school: "Illusion", manacost: 2, defaultOff: true, cancelAutoMove: true, costOnToggle: true, components: [], level:1, type:"passive",
-			events: [{type: "EnemySense", trigger: "draw", dist: 12, distStealth: 6}]},
+		{name: "EnemySense", prerequisite: "ApprenticeKnowledge", tags: ["buff", "utility", "knowledge", "sound"], school: "Illusion", manacost: 0, defaultOff: true, cancelAutoMove: true, components: [], level:1, type:"passive",
+			events: [
+				{type: "Multiply", trigger: "calcHearing", mult: 3.0},
+				{type: "Multiply", trigger: "calcVision", mult: 0.1},
+				{type: "PassTime", trigger: "toggleSpell", time: 1}
+			]},
 		{name: "Light", prerequisite: "ApprenticeLight", tags: ["buff", "utility", "light"], school: "Illusion", manacost: 2, spellPointCost: 1, defaultOff: true, cancelAutoMove: true, costOnToggle: true, time: 12, components: [], level:1, type:"passive",
 			events: [{type: "Light", trigger: "getLights", power: 12, time: 12}, {type: "Light", trigger: "toggleSpell", power: 12, time: 12}]},
 		{name: "Evasion", prerequisite: "ApprenticeMystery", tags: ["buff", "utility", "defense"], sfx: "Fwoosh", school: "Illusion", manacost: 5, components: ["Legs"], mustTarget: true, level:1, type:"buff",
 			buffs: [
 				{id: "Evasion", type: "Evasion", labelcolor: "#a288b6", duration: 25, power: 3.0, player: true, enemies: true, maxCount: 5, tags: ["defense", "incomingHit"]},
 			], onhit:"", time:25, power: 0, range: 2, size: 1, damage: ""},
+
+
+		{name: "ArrowFireSpell", prerequisite: "ApprenticeFire", tags: ["offense", "aoe", "arrow"], school: "Elements", manacost: 0, defaultOff: true, cancelAutoMove: true, components: [], level:1, type:"passive",
+			events: [
+				{type: "ArrowFireSpell", trigger: "playerCast", tags: ["arrowreplace"], spell: "ArrowFire", power: 2, aoe: 1.5, time: 3, energyCost: .03, damage: "fire"},
+				{type: "ExclusiveTag", trigger: "toggleSpell", tags: ["arrow"]}
+			]},
+		{name: "ArrowVineSpell", prerequisite: "ApprenticeWater", tags: ["offense", "binding", "utility", "arrow"], school: "Elements", manacost: 0, defaultOff: true, cancelAutoMove: true, components: [], level:1, type:"passive",
+			events: [
+				{type: "ArrowVineSpell", trigger: "playerCast", tags: ["arrowreplace"], spell: "ArrowVine", bind: 5, time: 3, energyCost: .02, bindType: "Vine", damage: "chain"},
+				{type: "ExclusiveTag", trigger: "toggleSpell", tags: ["arrow"]}
+			]},
 	],
 };
 /**
@@ -862,7 +1147,7 @@ let KinkyDungeonSpellListEnemies = [
 	},
 	{name: "BindVine", tags: ["offense", "nature", "binding"], sfx: "MagicSlash", school: "Conjure", manacost: 0.5, components: ["Verbal"],
 		noTargetPlayer: true, mustTarget: true, level:1, type:"hit", onhit:"instant", evadeable: false, power: 3.0, time: 10, range: 1.5, size: 1, lifetime: 1, aoe: 0.5, damage: "crush",
-		playerEffect: {name: "Bind", damage: "crush", power: 2, tag: "vineRestraints"},
+		playerEffect: {name: "Bind", damage: "chain", power: 2, tag: "vineRestraints"},
 	},
 	{name: "BindChain", tags: ["offense", "metal", "binding"], sfx: "MagicSlash", school: "Conjure", manacost: 0.5, components: ["Verbal"],
 		noTargetPlayer: true, mustTarget: true, level:1, type:"hit", onhit:"instant", evadeable: false, power: 3.0, range: 1.5, size: 1, lifetime: 1, aoe: 0.5, damage: "crush",
@@ -878,8 +1163,8 @@ let KinkyDungeonSpellListEnemies = [
 	{name: "GagBolt", tags: ["binding", "leather", "bolt", "offense"], minRange: 1.5, sfx: "MagicSlash", hitsfx: "LightSwing", school: "Conjure", manacost: 3, components: ["Arms"], level:1, type:"bolt",
 		projectileTargeting:true, onhit:"", time: 0,  power: 2.0, delay: 0, range: 15, damage: "chain", speed: 5, bulletLifetime: 5, playerEffect: {name: "Bind", damage: "chain", power: 2, tag: "gagSpell"},
 		events: [
-			{type: "SilenceHumanoid", trigger: "bulletHitEnemy", time: 15},
 			{type: "ElementalIfNotSilenced", trigger: "bulletHitEnemy", damage: "chain", power: 0, bind: 4},
+			{type: "SilenceHumanoid", trigger: "bulletHitEnemy", time: 15},
 		], effectTileDurationMod: 10, effectTileAoE: 0.5, effectTile: {
 			name: "Belts",
 			duration: 20,
@@ -908,8 +1193,8 @@ let KinkyDungeonSpellListEnemies = [
 	{name: "BlindfoldBolt", tags: ["binding", "leather", "bolt", "offense"], minRange: 1.5, sfx: "MagicSlash", hitsfx: "LightSwing", school: "Conjure", manacost: 3, components: ["Arms"], level:1, type:"bolt",
 		projectileTargeting:true, onhit:"", time: 0,  power: 2.0, delay: 0, range: 15, damage: "chain", speed: 5, bulletLifetime: 5, playerEffect: {name: "Bind", damage: "chain", power: 2, tag: "blindfoldSpell"},
 		events: [
-			{type: "BlindHumanoid", trigger: "bulletHitEnemy", time: 20},
 			{type: "ElementalIfNotBlinded", trigger: "bulletHitEnemy", damage: "chain", power: 0, bind: 4},
+			{type: "BlindHumanoid", trigger: "bulletHitEnemy", time: 20},
 		], effectTileDurationMod: 10, effectTileAoE: 0.5, effectTile: {
 			name: "Belts",
 			duration: 20,
@@ -918,8 +1203,8 @@ let KinkyDungeonSpellListEnemies = [
 	{name: "CuffsBolt", tags: ["binding", "metal", "bolt", "offense"], minRange: 1.5, sfx: "MagicSlash", hitsfx: "LightSwing", school: "Conjure", manacost: 4, components: ["Arms"], level:1, type:"bolt",
 		projectileTargeting:true, onhit:"", time: 0,  power: 3.0, delay: 0, range: 15, damage: "chain", speed: 5, bulletLifetime: 5, playerEffect: {name: "Bind", damage: "chain", power: 3, tag: "cuffsSpell"},
 		events: [
-			{type: "DisarmHumanoid", trigger: "bulletHitEnemy", time: 6},
 			{type: "ElementalIfNotDisarmed", trigger: "bulletHitEnemy", damage: "chain", power: 0, bind: 4},
+			{type: "DisarmHumanoid", trigger: "bulletHitEnemy", time: 6},
 		], effectTileDurationMod: 10, effectTileAoE: 0.5, effectTile: {
 			name: "Chains",
 			duration: 20,
@@ -985,28 +1270,39 @@ let KinkyDungeonSpellListEnemies = [
 	{name: "SlimeSuit", sfx: "MagicSlash", school: "Illusion", manacost: 5, components: [], level:1, type:"special", special: "dress", outfit: "SlimeSuit", noMiscast: true,
 		onhit:"", time:25, power: 0, range: 1.5, size: 1, damage: ""},
 
+	{name: "DildoBatBuff", sfx: "Vibe", school: "Elements", manacost: 0, components: ["Verbal"], mustTarget: true, level:1, type:"buff", noMiscast: true,
+		buffs: [
+			{
+				id: "DildoBatBuff", type: "DildoBatBuff", duration: 11, power: 3.0, player: true, enemies: false, tags: [],
+				aura: "#ffff55", events: [
+					{trigger: "playerAttack", type: "ElementalEffect", crit: 3.0, power: 3.0, damage: "charm", prereq: "HaveDildoBatPlus"},
+				]
+			},
+		], onhit:"", time:10, power: 3.0, range: 2, size: 1, damage: "",
+	},
+
 	{name: "SlimeForm", sfx: "MagicSlash", school: "Illusion", manacost: 8, components: ["Verbal"], mustTarget: true, level:1, type:"buff", noMiscast: true,
 		buffs: [
 			{id: "SlimeForm", type: "glueDamageResist", aura: "#ff00ff", duration: 25, power: 0.5, player: true, enemies: false, tags: ["defense"]},
 			{id: "SlimeForm2", type: "Squeeze", duration: 25, power: 0.5, player: true, enemies: false, tags: ["mobility"]},
 			{id: "SlimeForm3", type: "Evasion", duration: 25, power: 0.5, player: true, enemies: false, tags: ["defense"]},
 			{id: "SlimeForm4", type: "Counterattack", duration: 25, power: 2.5, player: true, enemies: false, tags: ["counter"], events: [
-				{trigger: "beforeAttack", type: "CounterattackDamage", power: 2.5, damage: "glue"},
+				{trigger: "beforeAttack", type: "CounterattackDamage", power: 2.5, damage: "glue", prereq: "hit-hostile"},
 			]},
 		], onhit:"", time:10, power: 0, range: 2, size: 1, damage: "",
 		extraCast: [{spell: "Slimethrower2"}, {spell: "SlimeSuit"}]},
-	{name: "AvatarForm", sfx: "PowerMagic", school: "Elements", manacost: 8, components: ["Verbal"], mustTarget: true, level:1, type:"buff", noMiscast: true,
+	{name: "AvatarForm", sfx: "PowerMagic", school: "Elements", manacost: 0, components: ["Verbal"], mustTarget: true, level:1, type:"buff", noMiscast: true,
 		buffs: [
-			{id: "AvatarFire", aura: "#f1641f", type: "event", duration: 9999, power: 5, player: true, enemies: false, maxCount: 1, tags: ["cast_fire"], events: [
+			{id: "AvatarFire", aura: "#f1641f", type: "event", duration: 9999, power: 5, player: true, enemies: false, maxCount: 1, tags: ["cast_fire", "trigger_fire"], events: [
 				{trigger: "calcMana", type: "AvatarFire", power: 5.0},
 			]},
-			{id: "AvatarWater", aura: "#2789cd", type: "event", duration: 9999, power: 5, player: true, enemies: false, maxCount: 1, tags: ["cast_water"], events: [
+			{id: "AvatarWater", aura: "#2789cd", type: "event", duration: 9999, power: 5, player: true, enemies: false, maxCount: 1, tags: ["cast_water", "trigger_water"], events: [
 				{trigger: "calcMana", type: "AvatarWater", power: 5.0},
 			]},
-			{id: "AvatarAir", aura: "#c9d4fd", type: "event", duration: 9999, power: 5, player: true, enemies: false, maxCount: 1, tags: ["cast_air"], events: [
+			{id: "AvatarAir", aura: "#c9d4fd", type: "event", duration: 9999, power: 5, player: true, enemies: false, maxCount: 1, tags: ["cast_air", "trigger_air"], events: [
 				{trigger: "calcMana", type: "AvatarAir", power: 5.0},
 			]},
-			{id: "AvatarEarth", aura: "#61a53f", type: "event", duration: 9999, power: 5, player: true, enemies: false, maxCount: 1, tags: ["cast_earth"], events: [
+			{id: "AvatarEarth", aura: "#61a53f", type: "event", duration: 9999, power: 5, player: true, enemies: false, maxCount: 1, tags: ["cast_earth", "trigger_earth"], events: [
 				{trigger: "calcMana", type: "AvatarEarth", power: 5.0},
 			]},
 		], onhit:"", time:10, power: 0, range: 2, size: 1, damage: ""},
@@ -1017,15 +1313,31 @@ let KinkyDungeonSpellListEnemies = [
 		hitColor: 0x8888ff, hitLight: 6, components: ["Arms"], level:1, type:"hit", noTerrainHit: true, onhit:"aoe", time: 1, delay: 1, power: 2.5, range: 2, size: 1, aoe: 0.5, lifetime: 1, damage: "electric"},
 	{name: "StaticSphereStrike", sfx: "Shock", manacost: 2, bulletColor: 0x8888ff, bulletLight: 2,
 		hitColor: 0x8888ff, hitLight: 6, components: ["Verbal"], level:1, type:"hit", noTerrainHit: true, onhit:"aoe", time: 1, delay: 1, power: 1.5, range: 2, size: 1, aoe: 0.5, lifetime: 1, damage: "electric"},
-	{name: "LightningRuneStrike", bulletColor: 0x8888ff, bulletLight: 2,
+	{name: "LightningRuneStrike", bulletColor: 0x8888ff, bulletLight: 2, tags: ["electric", "trap"],
+		hideWarnings: true,
+		crit: 2,
 		effectTileDurationMod: 2, effectTile: {
 			name: "Sparks",
 			duration: 3,
 		},
 		hitColor: 0x8888ff, hitLight: 6, hitsfx: "Shock", manacost: 2, components: ["Legs"], level:1, type:"dot", noTerrainHit: true, onhit:"", time: 4, delay: 300, power: 4.5, range: 2, size: 1, aoe: 0.5, lifetime: 1, damage: "electric"},
-	{name: "FlameRuneStrike", bulletColor: 0xb83716, bulletLight: 2,
+	{name: "FlameRuneStrike", bulletColor: 0xb83716, bulletLight: 2, tags: ["fire", "trap"],
+		hideWarnings: true,
+		crit: 2,
 		hitColor: 0xe64539, hitLight: 6, hitsfx: "Lightning", manacost: 2, components: ["Legs"], level:1, type:"dot", noTerrainHit: true, onhit:"", delay: 300, power: 5.5, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "fire"},
-	{name: "FreezeRuneStrike", hitsfx: "Freeze", manacost: 2, bulletColor: 0x8888ff, bulletLight: 2,
+	{name: "RopeRuneStrike", bulletColor: 0xff73ef, bulletLight: 2, tags: ["rope", "trap"],
+		hideWarnings: true,
+		crit: 2,
+		effectTileDurationMod: 10, effectTile: {
+			name: "Ropes",
+			duration: 20,
+		},
+		hitColor: 0xff73ef, hitLight: 6, hitsfx: "Struggle", manacost: 2, components: ["Legs"], level:1, type:"dot",
+		playerEffect: {name: "MagicRope", time: 3, count: 3},
+		noTerrainHit: true, onhit:"", delay: 300, power: 2.5, range: 2, time: 8, size: 3, aoe: 1.5, lifetime: 1, bind: 8, damage: "chain"},
+	{name: "FreezeRuneStrike", hitsfx: "Freeze", manacost: 2, bulletColor: 0x8888ff, bulletLight: 2, tags: ["ice", "trap"],
+		hideWarnings: true,
+		crit: 2,
 		hitColor: 0x8888ff, hitLight: 6, components: ["Legs"], level:1, type:"dot", noTerrainHit: true, onhit:"", time: 30, delay: 300, power: 3.0, range: 2, size: 3, aoe: 0.5, lifetime: 1, damage: "ice"},
 	{name: "EarthformSingle", tags: ["earth", "utility", "summon"], noSprite: true, minRange: 0, landsfx: "Bones", hideUnlearnable: true, manacost: 4, components: ["Legs"], prerequisite: ["Earthform"],
 		level:1, type:"hit", onhit:"summon", summon: [{name: "EarthenMonolith", faction: "Rock" , count: 1, time: 9999, bound: true}], power: 0, time: 9999, delay: 1, range: 4, size: 1, aoe: 0.5, lifetime: 1, damage: "inert"},
@@ -1047,29 +1359,86 @@ let KinkyDungeonSpellListEnemies = [
 		], onhit:"", time:10, power: 0, range: 2, size: 1, damage: ""},
 	{enemySpell: true, name: "EnemyCorona",
 		bulletColor: 0xffff77, bulletLight: 5,
-		minRange: 0, noise: 4, sfx: "MagicSlash", school: "Illusion", manacost: 7, components: ["Arms"], projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 2, power: 12, range: 8, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert", noMiscast: false,
+		minRange: 0, sfx: "MagicSlash", school: "Illusion", manacost: 7, components: ["Arms"], projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 2, power: 12, range: 8, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert", noMiscast: false,
 		spellcast: {spell: "EnemyCoronaBeam", target: "target", directional:true, offset: false}, channel: 2},
 	{enemySpell: true, name: "EnemyCoronaBeam",
-		trailColor: 0xffff77, trailLight: 3,
+		trailColor: 0xffff77, trailLight: 3, slowStart: true, color: "#ffff88", noise: 1,
 		sfx: "FireSpell", school: "Elements", manacost: 0, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, nonVolatile: true, onhit:"", power: 4, delay: 0, range: 8, speed: 50, size: 1, damage: "fire",
 		trailHit: "", trailPower: 0, trailLifetime: 1.1, trailTime: 4, trailDamage:"inert", trail:"lingering", trailChance: 1, playerEffect: {name: "CoronaShock", time: 3}},
 	{enemySpell: true, name: "MonolithBeam",
 		bulletColor: 0xff5555, bulletLight: 5,
-		minRange: 0, noise: 4, sfx: "MagicSlash", school: "Illusion", manacost: 7, components: ["Arms"], projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 2, power: 12, range: 8, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert", noMiscast: false,
+		minRange: 0, sfx: "MagicSlash", school: "Illusion", manacost: 7, components: ["Arms"], projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 2, power: 12, range: 8, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert", noMiscast: false,
 		spellcast: {spell: "MonolithBeamBeam", target: "target", directional:true, offset: false}, channel: 2},
 	{enemySpell: true, name: "MonolithBeamBeam",
-		trailColor: 0xff5555, trailLight: 3,
+		trailColor: 0xff5555, trailLight: 3, slowStart: true, color: "#ff5555", noise: 1,
 		sfx: "MagicSlash", school: "Elements", manacost: 0, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, nonVolatile: true, onhit:"", power: 6, delay: 0, range: 8, speed: 50, size: 1, damage: "chain",
 		trailHit: "", trailPower: 0, trailLifetime: 1.1, trailTime: 4, trailDamage:"inert", trail:"lingering", trailChance: 1, playerEffect: {name: "CrystalBind", time: 3}},
 
+	{enemySpell: true, name: "ObserverBeam", noDirectionOffset: true, color: "#bc4a9b",
+		bulletColor: 0xff5555, bulletLight: 5,
+		minRange: 0, sfx: "MagicSlash", school: "Illusion", manacost: 7, components: ["Arms"], projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 1, power: 6, range: 6, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert", noMiscast: false,
+		spellcast: {spell: "ObserverBeamBeam", target: "target", directional: false, offset: false}, channel: 2},
+	{enemySpell: true, name: "ObserverBeamBeam",
+		trailColor: 0xff5555, trailLight: 3, slowStart: true, color: "#bc4a9b", noDoubleHit: true,
+		sfx: "Evil", school: "Elements", manacost: 0, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, piercing: true, nonVolatile: true, onhit:"", power: 6, delay: 0, range: 6, speed: 50, size: 1, damage: "soul",
+		trailHit: "", trailPower: 0, trailLifetime: 1.1, trailTime: 4, trailDamage:"inert", trail:"lingering", trailChance: 1, playerEffect: {name: "ObserverBeam", count: 1}},
+
+
 	{enemySpell: true, name: "ClericBeam",
 		bulletColor: 0x88ff88, bulletLight: 5,
-		color: "#88ff88", minRange: 0, noise: 4, sfx: "MagicSlash", school: "Illusion", manacost: 7, components: ["Arms"], projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 2, power: 12, range: 8, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert", noMiscast: false,
+		color: "#88ff88", minRange: 0, sfx: "MagicSlash", school: "Illusion", manacost: 7, components: ["Arms"], projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 2, power: 12, range: 8, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert", noMiscast: false,
 		spellcast: {spell: "ClericBeamBeam", target: "target", directional:true, offset: false}, channel: 2},
 	{enemySpell: true, name: "ClericBeamBeam",
-		trailColor: 0x88ff88, trailLight: 3,
+		trailColor: 0x88ff88, trailLight: 3, slowStart: true, color: "#88ff88", noise: 1,
 		sfx: "MagicSlash", school: "Elements", manacost: 0, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, nonVolatile: true, onhit:"", power: 6, delay: 0, range: 8, speed: 50, size: 1, damage: "fire",
 		trailHit: "", trailPower: 0, trailLifetime: 1.1, trailTime: 4, trailDamage:"inert", trail:"lingering", trailChance: 1, playerEffect: {name: "MysticShock", time: 3}},
+
+
+	{name: "ArrowNormal", tags: ["arrowreplace"], color: "#88ff88", sfx: "Arrow", manacost: 0, noMiscast: true, components: [], level: 1, type:"bolt",
+		faction: "Player",
+		staminacost: 2,
+		crit: 1.5,
+		projectileTargeting:true, onhit:"", power: 2.5, delay: 0, range: 7.5, damage: "pierce", speed: 2.5},
+	{name: "ArrowRecurve", tags: ["arrowreplace"], color: "#88ff88", sfx: "Arrow", manacost: 0, noMiscast: true, components: [], level: 1, type:"bolt",
+		faction: "Player",
+		staminacost: 3.5,
+		crit: 1.5,
+		projectileTargeting:true, onhit:"", power: 4, delay: 0, range: 8.5, damage: "pierce", speed: 3},
+	{name: "ArrowLongbow", tags: ["arrowreplace"], color: "#88ff88", sfx: "Arrow", manacost: 0, noMiscast: true, components: [], level: 1, type:"bolt",
+		faction: "Player",
+		staminacost: 6.0,
+		crit: 1.5,
+		projectileTargeting:true, onhit:"", power: 6.0, delay: 0, range: 10, damage: "pierce", speed: 3.5},
+	{name: "ArrowBolt", tags: ["arrowreplace"], color: "#88ff88", sfx: "ArrowBolt", manacost: 0, noMiscast: true, components: [], level: 1, type:"bolt",
+		crit: 2.0,
+		faction: "Player",
+		projectileTargeting:true, onhit:"", power: 6.5, delay: 0, range: 10, damage: "pierce", speed: 3},
+	{name: "ArrowBoltPistol", tags: ["arrowreplace"], color: "#88ff88", sfx: "ArrowBolt", manacost: 0, noMiscast: true, components: [], level: 1, type:"bolt",
+		crit: 2.0,
+		faction: "Player",
+		projectileTargeting:true, onhit:"", power: 4.5, delay: 0, range: 7.5, damage: "pierce", speed: 2.5},
+	{name: "ArrowBoltHeavy", tags: ["arrowreplace"], color: "#88ff88", sfx: "ArrowBolt", manacost: 0, noMiscast: true, components: [], level: 1, type:"bolt",
+		crit: 2.5, pierceEnemies: true,
+		faction: "Player",
+		projectileTargeting:true, onhit:"", power: 7, delay: 0, range: 14, damage: "pierce", speed: 4},
+
+	{name: "ArrowFire", tags: ["arrowspecial"], color: "#ffff00", sfx: "FireSpell", landsfx: "Lightning", manacost: 0, noMiscast: true, components: [], level: 1, type:"bolt", projectileTargeting:true,
+		crit: 1.5,
+		faction: "Player",
+		effectTileDurationMod: 12, effectTile: {
+			name: "Ember",
+			duration: -4,
+		},
+		onhit:"aoe", power: 4, noDirectDamage: true, delay: 0, range: 7.5, aoe: 1.5, lifetime: 1, damage: "fire", speed: 2.5, playerEffect: {name: "HeatBlast", time: 1, damage: "fire", power: 4}},
+	{name: "ArrowVine", tags: ["arrowspecial"], color: "#55ff55", sfx: "FireSpell", landsfx: "MagicSlash", manacost: 0, noMiscast: true, components: [], level: 1, type:"bolt", projectileTargeting:true,
+		crit: 1.5,
+		faction: "Player",
+		bindType: "Vine",
+		effectTileDurationMod: 10, effectTile: {
+			name: "Vines",
+			duration: 20,
+		},
+		onhit:"", power: 4, delay: 0, range: 7.5, bind: 5, lifetime: 1, damage: "chain", speed: 2.5, playerEffect: {name: "Bind", damage: "chain", power: 2, tag: "vineRestraints"}},
 
 	{name: "BlasterBlast", hitsfx: "Shock", sfx: "Laser", school: "Elements", manacost: 0, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, nonVolatile: true, onhit:"", power: 2.5, time: 1, delay: 0,
 		bulletColor: 0xffff00, bulletLight: 5, noMiscast: true,
@@ -1082,9 +1451,9 @@ let KinkyDungeonSpellListEnemies = [
 		bulletColor: 0xffff00, bulletLight: 5,
 		spellcast: {spell: "BondageBustBeam", target: "target", directional:true, offset: false}, noMiscast: true, channel: 1},
 	{name: "BondageBustBeam", hitsfx: "Shock", school: "Elements", manacost: 0, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, nonVolatile: true, onhit:"", power: 3, time: 3, delay: 0, range: 8, speed: 50, size: 1, damage: "electric",
-		trailColor: 0xffff00, trailLight: 3,
+		trailColor: 0xffff00, trailLight: 3, crit: 1.5, bind: 3, bindType: "Energy",
 		trailHit: "", trailPower: 0, trailLifetime: 1.1, trailTime: 4, trailDamage:"inert", trail:"lingering", trailChance: 1, playerEffect: {name: "Shock", time: 3}},
-	{name: "HeartArrow", sfx: "MagicSlash", school: "Elements", manacost: 3, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"", power: 4, delay: 0, range: 50, damage: "soul", speed: 2,
+	{name: "HeartArrow", sfx: "MagicSlash", school: "Elements", manacost: 0, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"", power: 4, delay: 0, range: 50, damage: "soul", speed: 2,
 		events: [
 			{type: "GreaterRage", trigger: "bulletHitEnemy"},
 		],
@@ -1102,7 +1471,7 @@ let KinkyDungeonSpellListEnemies = [
 
 
 	{name: "CoronaBeam", sfx: "FireSpell",
-		trailColor: 0xffff77, trailLight: 3,
+		trailColor: 0xffff77, trailLight: 3, noise: 2, crit: 1.5,
 		school: "Elements", manacost: 0, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, nonVolatile: true, onhit:"", power: 12, delay: 0, range: 8, speed: 50, size: 1, damage: "fire",
 		trailHit: "", trailPower: 0, trailLifetime: 1.1, trailTime: 4, trailDamage:"inert", trail:"lingering", trailChance: 1},
 	{name: "AllyCrackle", sfx: "Shock", school: "Elements", manacost: 4, components: ["Arms"], level:1, type:"bolt", piercing: true, projectileTargeting:true, nonVolatile: true, onhit:"", power: 4, delay: 0, time: 1, range: 4, speed: 4, size: 1, damage: "electric",
@@ -1110,6 +1479,13 @@ let KinkyDungeonSpellListEnemies = [
 	{allySpell: true, name: "AllyFirebolt", sfx: "FireSpell", school: "Elements", manacost: 3, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"", power: 4.5, delay: 0, range: 50, damage: "fire", speed: 3},
 	{allySpell: true, name: "AllyWindBlast", sfx: "FireSpell", school: "Elements", manacost: 3, components: ["Arms"], level:1, type:"bolt",
 		projectileTargeting:true, onhit:"", power: 2.0, time: 2, delay: 0, range: 50, damage: "stun", speed: 1, hitSpin: 1, bulletSpin: 1,
+		events: [{type: "Knockback", trigger: "bulletHitEnemy", power: 1.0, dist: 1.0},]},
+	{enemySpell: true, name: "EnemyWindBlast", tags: ["air", "bolt", "offense", "utility"],
+		slowStart: true,
+		prerequisite: "ApprenticeAir", sfx: "FireSpell", school: "Elements", manacost: 2.5, components: ["Arms"], level:1, type:"bolt",
+		projectileTargeting:true, onhit:"", power: 1.0, time: 2, delay: 0, range: 2.99, damage: "stun", speed: 3, hitSpin: 1, bulletSpin: 1,
+		shotgunCount: 3, shotgunDistance: 4, shotgunSpread: 3, shotgunSpeedBonus: 1,
+		playerEffect: {name: "EnemyWindBlast", power: 0.5, damage: "stun", dist: 1.0},
 		events: [{type: "Knockback", trigger: "bulletHitEnemy", power: 1.0, dist: 1.0},]},
 	{allySpell: true, name: "AllyShadowStrike", minRange: 0, sfx: "MagicSlash", school: "Illusion", manacost: 3, components: ["Verbal"], level:1, type:"inert", onhit:"aoe", power: 6, time: 2, delay: 1, range: 1.5, size: 1, aoe: 0.75, lifetime: 1, damage: "cold"},
 	{allySpell: true, name: "HeelShadowStrike", sfx: "MagicSlash", school: "Illusion", manacost: 3, components: ["Verbal"], level:1, type:"inert", onhit:"aoe", power: 2.5, time: 4, delay: 1, range: 1.5, size: 1, aoe: 0.75, lifetime: 1, damage: "cold"},
@@ -1219,6 +1595,15 @@ let KinkyDungeonSpellListEnemies = [
 		duration: 20,
 	}, manacost: 4, components: ["Verbal"], level:1, type:"inert", onhit:"aoe", time: 5, delay: 2, power: 4, range: 6, size: 3, aoe: 1, lifetime: 1, damage: "chain", playerEffect: {name: "VineEngulf", power: 2}},
 
+	{enemySpell: true, name: "CursingCircle", color: "#FF5277", minRange: 0, sfx: "Fwoosh", bulletSpin: 0.1, specialCD: 12,
+		selfcast: true, noTerrainHit: true,
+		manacost: 4, components: ["Verbal"], level:1, type:"inert", onhit:"aoe", time: 4, delay: 3, power: 4, range: 7, size: 5, aoe: 2.5, lifetime: 1, damage: "soul",
+		playerEffect: {name: "CursingCircle", count: 1, kind: "cursedCollar", power: 3.5, damage: "soul", time: 40}},
+	{enemySpell: true, name: "CursingCircle2", color: "#8f52ff", minRange: 0, sfx: "Fwoosh", bulletSpin: 0.1, specialCD: 12,
+		selfcast: true, noTerrainHit: true,
+		manacost: 4, components: ["Verbal"], level:1, type:"inert", onhit:"aoe", time: 4, delay: 3, power: 4, range: 7, size: 5, aoe: 2.5, lifetime: 1, damage: "soul",
+		playerEffect: {name: "CursingCircle", count: 1, kind: "cursedCollar2", power: 3.5, damage: "soul", time: 40}},
+
 	{enemySpell: true, name: "CrushingFate", color: "#dddddd", minRange: 0, sfx: "MagicSlash", bulletSpin: 0.25,
 		manacost: 7, components: ["Verbal"], level:1, type:"inert", onhit:"aoe", time: 4, delay: 6, power: 5, range: 7, size: 5, aoe: 2.5, lifetime: 1, damage: "crush", playerEffect: {name: "MoonBondage", count: 2, kind: "mithrilRestraints"}},
 	{enemySpell: true, name: "BoundByFate", color: "#dddddd", minRange: 0, sfx: "MagicSlash", bulletSpin: -0.25,
@@ -1238,7 +1623,7 @@ let KinkyDungeonSpellListEnemies = [
 		effectTileDurationMod: 7, effectTile: {
 			name: "Smoke",
 			duration: -1,
-		}, type:"inert", onhit:"aoe", delay: 5, power: 6, range: 3, size: 3, aoe: 1.5, lifetime: 1, damage: "fire", playerEffect: {name: "HeatBlast", time: 3, damage: "pain", power: 6}},
+		}, type:"inert", onhit:"aoe", delay: 5, power: 6, range: 3, size: 3, aoe: 1.5, lifetime: 1, damage: "fire", playerEffect: {name: "HeatBlast", time: 3, damage: "fire", power: 6}},
 
 	{name: "ManyChains", sfx: "MagicSlash", minRange: 0, manacost: 3, projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 3, power: 3, range: 8, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert", noMiscast: false, castDuringDelay: true, noCastOnHit: true,
 		spellcast: {spell: "WitchChainBolt", target: "target", directional:true, randomDirection: true, noTargetMoveDir: true, spread: 1, offset: false}, channel: 3},
@@ -1275,10 +1660,17 @@ let KinkyDungeonSpellListEnemies = [
 		time: 5, delay: 3, power: 3, range: 6.99, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert", noMiscast: false, castDuringDelay: true, noCastOnHit: true,
 		spellcast: {spell: "MiniCable", sfx: "MechLaunch", target: "target", directional:true, randomDirection: true, noTargetMoveDir: true, spread: 1, offset: false}, channel: 3},
 
+	{name: "ManyShadowHands", sfx: "MagicSlash", minRange: 0, manacost: 4, projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 3, power: 3, range: 8, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert", noMiscast: false, castDuringDelay: true, noCastOnHit: true,
+		spellcast: {spell: "ShadowBolt", target: "target", directional:true, randomDirection: true, noTargetMoveDir: true, spread: 1.5, offset: false}, channel: 3},
+	{name: "ManyObsidianBolts", sfx: "MagicSlash", minRange: 0, manacost: 4, projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 3, power: 3, range: 8, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert", noMiscast: false, castDuringDelay: true, noCastOnHit: true,
+		spellcast: {spell: "ObsidianBolt", target: "target", directional:true, randomDirection: true, noTargetMoveDir: true, spread: 1.5, offset: false}, channel: 3},
+	{name: "ManyMithrilBolts", sfx: "MagicSlash", minRange: 0, manacost: 4, projectileTargeting: true, noTargetPlayer: true, CastInWalls: true, level:1, type:"inert", onhit:"aoe", time: 5, delay: 3, power: 3, range: 8, meleeOrigin: true, size: 1, lifetime: 1, damage: "inert", noMiscast: false, castDuringDelay: true, noCastOnHit: true,
+		spellcast: {spell: "MithrilBolt", target: "target", directional:true, randomDirection: true, noTargetMoveDir: true, spread: 1.5, offset: false}, channel: 3},
 
 
 	{enemySpell: true, name: "ShadowBolt",  bindType: "Slime", color: "#6a15fa", sfx: "Evil", manacost: 5, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"",  power: 3, delay: 0, range: 50, damage: "cold", speed: 2, playerEffect: {name: "ShadowBolt", count: 1, time: 3, power: 3, damage: "cold"}},
 	{enemySpell: true, name: "ObsidianBolt",  bindType: "Metal", color: "#ff5277", sfx: "Evil", manacost: 5, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"",  power: 3, delay: 0, range: 50, damage: "cold", speed: 2, playerEffect: {name: "ObsidianBolt", count: 1, time: 3, power: 3, damage: "cold"}},
+	{enemySpell: true, name: "MithrilBolt",  bindType: "Ropes", color: "#999999", sfx: "Evil", manacost: 5, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"",  power: 3, delay: 0, range: 50, damage: "cold", speed: 2, playerEffect: {name: "MithrilBolt", count: 1, time: 3, power: 3, damage: "cold"}},
 	{enemySpell: true, name: "RubberBolt",  bindType: "Slime", color: "#ff3388", sfx: "RubberBolt", manacost: 4, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"",  power: 4, delay: 0, range: 50, damage: "glue", speed: 2, playerEffect: {name: "RubberBolt", count: 1, time: 4, power: 4, damage: "glue"}},
 	{enemySpell: true, name: "EncaseBolt",  bindType: "Slime", color: "#a04abd", sfx: "RubberBolt", manacost: 4, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"",  power: 2, delay: 0, range: 50, damage: "glue", speed: 2, playerEffect: {name: "EncaseBolt", count: 1, time: 4, power: 2, damage: "glue"}},
 	{enemySpell: true, name: "EncaseBoltDrone",  bindType: "Slime", color: "#a04abd", sfx: "RubberBolt", manacost: 4, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"",  power: 1, delay: 0, range: 50, damage: "glue", speed: 2, playerEffect: {name: "EncaseBoltDrone", count: 1, time: 4, power: 1, damage: "glue"}},
@@ -1319,7 +1711,22 @@ let KinkyDungeonSpellListEnemies = [
 	{enemySpell: true, name: "MummyBolt", color: "#88ff88", sfx: "FireSpell", manacost: 5, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"", power: 4, delay: 0, range: 50, damage: "fire", speed: 3, playerEffect: {name: "MysticShock", time: 3}},
 	{enemySpell: true, name: "RobotBolt", color: "#ff5277", sfx: "Laser", manacost: 2, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"", power: 4, delay: 0, range: 50, damage: "electric", speed: 2, playerEffect: {name: "RobotShock", time: 2}},
 	{enemySpell: true, name: "RubberBullets",  bindType: "Slime", color: "#ffff00", minRange: 2.9, sfx: "Gunfire", manacost: 2, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"", power: 4, time: 0, delay: 0, range: 50, damage: "glue", speed: 3, playerEffect: {name: "RubberBullets", power: 4, count: 1, damage: "glue"}},
-	{enemySpell: true, name: "HeatBolt", color: "#ffff00", sfx: "FireSpell", manacost: 5, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"", power: 4, delay: 0, range: 50, damage: "fire", speed: 2, playerEffect: {name: "HeatBlast", time: 1, damage: "pain", power: 5}},
+
+
+	{enemySpell: true, name: "Fireexp", color: "#ffff00", minRange: 0, landsfx: "FireSpell", manacost: 5,
+		effectTileDurationMod: 2, effectTile: {
+			name: "Ember",
+			duration: 3,
+		},
+		components: ["Arms"], level:1, type:"inert", onhit:"aoe", power: 3.5, time: 1, delay: 1, range: 4, size: 1, aoe: 0.75, lifetime: 1, damage: "fire", playerEffect: {name: "HeatBlast", time: 1, damage: "fire", power: 5}},
+	{enemySpell: true, name: "Iceexp", color: "#00ffff", minRange: 0, landsfx: "Freeze", manacost: 5,
+		effectTileDurationMod: 5, effectTile: {
+			name: "Ice",
+			duration: 5,
+		},
+		components: ["Arms"], level:1, type:"inert", onhit:"aoe", power: 3.5, time: 1, delay: 1, range: 4, size: 1, aoe: 0.75, lifetime: 1, damage: "ice", playerEffect: {name: "Chill", damage: "ice", power: 3, time: 3}},
+
+	{enemySpell: true, name: "HeatBolt", color: "#ffff00", sfx: "FireSpell", manacost: 5, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"", power: 4, delay: 0, range: 50, damage: "fire", speed: 2, playerEffect: {name: "HeatBlast", time: 1, damage: "fire", power: 5}},
 	{enemySpell: true, noFirstChoice: true, name: "Hairpin", color: "#ffffff", minRange: 2.9, sfx: "Miss", manacost: 2, castRange: 6, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"", power: 4, delay: 0, range: 50, damage: "pain", speed: 2, playerEffect: {name: "Hairpin", power: 2, damage: "pain", time: 1}},
 	{enemySpell: true, name: "PoisonDragonBlast",  bindType: "Vine", color: "#88ff88", sfx: "FireSpell", hitsfx: "Bones", manacost: 5, components: ["Arms"], level:1, type:"bolt", projectileTargeting:true, onhit:"", power: 4, delay: 0, range: 50, damage: "grope", speed: 3, effectTileDurationMod: 10, effectTileAoE: 1.5, effectTileDensity: 0.5, effectTile: {
 		name: "Vines",
@@ -1426,6 +1833,9 @@ let KinkyDungeonSpellListEnemies = [
 		{name: "LearnedRope", count: 1, chance: 0.5, time: 20, strict: true, bound: true},
 		{name: "UnforseenRope", count: 1, chance: 0.5, time: 20, strict: true, bound: true}
 	], power: 0, time: 12, delay: 1, range: 8, size: 3, aoe: 10, lifetime: 1, damage: "fire"},
+	{enemySpell: true, name: "GhostAttack", hitsfx: "Evil", manacost: 8, components: ["Verbal"], level:4, type:"hit", onhit:"null", noSprite: true, noSumMsg: true, summon: [
+		{name: "Ghost", count: 1, time: 20, strict: true, bound: true, aware: true,},
+	], power: 0, time: 12, delay: 1, range: 8, size: 3, aoe: 10, lifetime: 1, damage: "fire"},
 	{enemySpell: true, name: "SummonCrystals", noSprite: true, minRange: 0, landsfx: "Freeze", manacost: 12, components: ["Verbal"], level:4, type:"inert", onhit:"summon", summon: [{name: "ChaoticCrystal", count: 3, time: 10, bound: true, weakBinding: true}], power: 0, time: 10, delay: 1, range: 40, size: 1, aoe: 2.01, lifetime: 1, damage: "inert"},
 	{enemySpell: true, name: "SummonChainWalls", noSprite: true, minRange: 0, landsfx: "MagicSlash", manacost: 2, specialCD: 12, components: ["Verbal"], level:4, type:"inert", onhit:"summon", summon: [{name: "ChainWall", count: 3, time: 0, bound: true, weakBinding: true}], power: 0, time: 10, delay: 1, range: 40, size: 1, aoe: 3.5, lifetime: 1, damage: "inert"},
 	{enemySpell: true, name: "SummonForceFields", noSprite: true, minRange: 0, landsfx: "MagicSlash", manacost: 2, specialCD: 12, components: ["Verbal"], level:4, type:"inert", onhit:"summon", summon: [{name: "ForceField", count: 3, time: 0, bound: true, weakBinding: true}], power: 0, time: 10, delay: 1, range: 40, size: 1, aoe: 3.5, lifetime: 1, damage: "inert"},
@@ -1448,7 +1858,13 @@ let KinkyDungeonSpellListEnemies = [
 		projectileTargeting:true, castRange: 50, type:"bolt", onhit:"summon", summon: [{name: "SarcoMinion", count: 1, bound: true}],
 		power: 0, damage: "inert", time: 34, delay: 1, range: 0.5, size: 1, aoe: 1.5, lifetime: 1, speed: 1, playerEffect: {},
 	},
-	{enemySpell: true, name: "SummonTapeDrone", noSprite: true, sfx: "MagicSlash", castCondition: "wolfTapeDrone", manacost: 3, specialCD: 10, components: ["Verbal"], level:1, projectileTargeting:true, castRange: 50, type:"bolt", onhit:"summon", summon: [{name: "WolfDrone", count: 1, time: 40, bound: true}], power: 0, damage: "inert", time: 34, delay: 1, range: 0.5, size: 1, aoe: 1.5, lifetime: 1, speed: 1, playerEffect: {}},
+	{enemySpell: true, name: "SummonSlimeMinion", noSprite: true, sfx: "Evil", castCondition: "slimeKraken", manacost: 2, specialCD: 4, components: ["Verbal"], level:1,
+		projectileTargeting:true, castRange: 50, type:"bolt", onhit:"summon", summon: [{name: "SmallSlimeLeaper", count: 1, bound: true}],
+		power: 0, damage: "inert", time: 34, delay: 1, range: 0.5, size: 1, aoe: 1.5, lifetime: 1, speed: 1, playerEffect: {},
+	},
+	{enemySpell: true, name: "SummonSlime", noSprite: true, minRange: 0, sfx: "Bones", manacost: 3, components: ["Verbal"], level:4, projectileTargeting:true, castRange: 50, type:"bolt", onhit:"summon", summon: [{name: "SmallSlimeLeaper", count: 1, strict: true}], power: 0, damage: "inert", time: 12, delay: 1, range: 0.5, size: 1, aoe: 1.5, lifetime: 1, speed: 1, playerEffect: {}},
+
+	{enemySpell: true, name: "SummonTapeDrone", noSprite: true, sfx: "MagicSlash", castCondition: "wolfTapeDrone", manacost: 3, specialCD: 10, components: ["Verbal"], level:1, projectileTargeting:true, castRange: 50, type:"bolt", onhit:"summon", summon: [{name: "WolfDrone", count: 1, time: 40, weakBinding: true, bound: true}], power: 0, damage: "inert", time: 34, delay: 1, range: 0.5, size: 1, aoe: 1.5, lifetime: 1, speed: 1, playerEffect: {}},
 	{enemySpell: true, name: "MirrorImage", noSprite: true, minRange: 0, selfcast: true, sfx: "FireSpell", manacost: 12, components: ["Verbal"], level:4, castRange: 50, type:"inert", onhit:"summon", summon: [{name: "MaidforceStalkerImage", count: 1, time: 12}], power: 0, time: 12, delay: 1, range: 2.5, size: 3, aoe: 1.5, lifetime: 1, damage: "inert",
 		spellcast: {spell: "DarkShroud", target: "origin", directional:false, offset: false}},
 
@@ -1505,7 +1921,7 @@ let KinkyDungeonSpellListEnemies = [
 			{id: "ZombieBuff", type: "Armor", duration: 8, power: 2.0, player: false, enemies: true, tags: ["defense", "armor"]},
 			{id: "ZombieBuff2", type: "MoveSpeed", duration: 8, power: 2.1, player: false, enemies: true, tags: ["offense", "speed"]},
 		], onhit:"", time:5, power: 0, range: 6, size: 1, damage: ""},
-	{enemySpell: true, buff: true, heal: true, name: "OrbHeal", minRange: 0, sfx: "MagicSlash", school: "Elements", manacost: 1, components: ["Arms"], mustTarget: true, level:3, type:"hit",
+	{enemySpell: true, buff: true, heal: true, name: "OrbHeal", minRange: 0, sfx: "MagicSlash", school: "Elements", manacost: 4, components: ["Arms"], mustTarget: true, level:3, type:"hit",
 		onhit:"heal", time:2, lifetime: 1, delay: 1, power: 2, aoe: 1.5, range: 8, size: 3, damage: "inert"},
 	{enemySpell: true, name: "Earthfield", selfcast: true, sfx: "Bones", school: "Illusion", manacost: 5, components: ["Verbal"], level:1, type:"inert", buffs: [{id: "Earthfield", type: "Armor", power: 2.0, player: false, enemies: true, noAlly: true, tags: ["armor", "defense"], range: 1.5}], onhit:"", time:6, aoe: 1.5, power: 0, delay: 8, range: 4, size: 3, damage: ""}, // Creates a shroud. Enemies within are hard to hit with melee attacks.
 	{name: "Earthrune", selfcast: true, sfx: "Bones", school: "Illusion", manacost: 5, components: ["Verbal"], level:1, type:"inert", buffs: [{id: "Earthfield", type: "Armor", power: 2.0, player: true, enemies: true, onlyAlly: true, tags: ["armor", "defense"], range: 1.5}], onhit:"", time:9, aoe: 1.5, power: 0, delay: 9, range: 4, size: 3, damage: ""}, // Creates a shroud. Enemies within are hard to hit with melee attacks.
@@ -1520,16 +1936,16 @@ let KinkyDungeonSpellListEnemies = [
 	{enemySpell: true, name: "TrapRibbons", sfx: "Struggle", manacost: 4, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 4, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "chain", playerEffect: {name: "TrapBindings", text: "KinkyDungeonTrapBindingsRibbons", tags: ["magicRibbons"], count: 3}},
 	{enemySpell: true, name: "TrapShackleWeak", sfx: "Struggle", manacost: 4, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "chain", playerEffect: {name: "TrapBindings", text: "KinkyDungeonTrapBindingsShackleWeak", tags: ["shackleRestraints"], count: 2}},
 	{enemySpell: true, name: "TrapMummyWeak", sfx: "Struggle", manacost: 4, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "chain", playerEffect: {name: "TrapBindings", text: "KinkyDungeonTrapBindingsMummyWeak", tags: ["mummyRestraints"], count: 2}},
-	{enemySpell: true, name: "TrapRopeWeak", sfx: "Struggle", manacost: 4, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "chain", playerEffect: {name: "TrapBindings", text: "KinkyDungeonTrapBindingsRopeWeak", tags: ["ropeMagicWeak", "clothRestraints"], count: 3}},
-	{enemySpell: true, name: "TrapRopeStrong", sfx: "Struggle", manacost: 4, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "chain", playerEffect: {name: "TrapBindings", text: "KinkyDungeonTrapBindingsRopeStrong", tags: ["ropeMagicStrong", "ropeAuxiliary", "clothRestraints", "tapeRestraints"], count: 4}},
+	{enemySpell: true, name: "TrapRopeWeak", sfx: "Struggle", manacost: 4, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "chain", playerEffect: {name: "TrapBindings", text: "KinkyDungeonTrapBindingsRopeWeak", tags: ["ropeMagicWeak", "rest_rope_weakmagic", "clothRestraints"], count: 3}},
+	{enemySpell: true, name: "TrapRopeStrong", sfx: "Struggle", manacost: 4, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "chain", playerEffect: {name: "TrapBindings", text: "KinkyDungeonTrapBindingsRopeStrong", tags: ["ropeMagicStrong", "rest_rope_strongmagic", "ropeAuxiliary", "clothRestraints", "tapeRestraints"], count: 4}},
 	{enemySpell: true, name: "TrapRopeHoly", sfx: "Struggle", manacost: 4, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "cold", playerEffect: {name: "TrapBindings", text: "KinkyDungeonTrapBindingsRopeHoly", tags: ["celestialRopes"], count: 2}},
 	{enemySpell: true, name: "TrapLeatherWeak", sfx: "Struggle", manacost: 4, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "chain", playerEffect: {name: "TrapBindings", text: "KinkyDungeonTrapBindingsLeatherWeak", tags: ["leatherRestraints", "leatherRestraintsHeavy"], count: 3}},
 	{enemySpell: true, name: "TrapCableWeak", sfx: "Struggle", manacost: 4, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "chain", playerEffect: {name: "TrapBindings", text: "KinkyDungeonTrapBindingsCableWeak", tags: ["hitechCables"], count: 3}},
 	{enemySpell: true, name: "TrapSlimeWeak", sfx: "Struggle", manacost: 4, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "glue", playerEffect: {name: "TrapBindings", text: "KinkyDungeonTrapBindingsSlimeWeak", tags: ["slimeRestraints"], count: 2}},
 	{enemySpell: true, name: "TrapMagicChainsWeak", sfx: "Struggle", manacost: 4, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "chain", playerEffect: {name: "TrapBindings", text: "KinkyDungeonTrapBindingsMagicChainsWeak", tags: ["chainRestraintsMagic"], count: 3}},
 	{nonmagical: true, enemySpell: true, name: "TrapSleepDart", sfx: "Gunfire", manacost: 1, components: [], level:1, type:"bolt", projectileTargeting:true, onhit:"", power: 4, time: 0, delay: 0, range: 50, damage: "pain", speed: 2, playerEffect: {name: "TrapSleepDart", power: 5}},
-	{enemySpell: true, name: "TrapLustCloud", sfx: "Freeze", manacost: 1, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "glue", playerEffect: {name: "TrapLustCloud", damage: "happygas", power: 8 }},
-	{enemySpell: true, name: "TrapSCloud", sfx: "Freeze", manacost: 1, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "glue", playerEffect: {name: "TrapSPCloud", damage: "pain", power: 5.0 }},
+	{enemySpell: true, name: "TrapLustCloud", sfx: "Freeze", manacost: 1, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "charm", playerEffect: {name: "TrapLustCloud", damage: "charm", power: 8 }},
+	{enemySpell: true, name: "TrapSCloud", sfx: "Freeze", manacost: 1, components: [], level:1, type:"inert", onhit:"aoe", passthrough: true, noTerrainHit: true, time: 5, delay: 1, power: 3, range: 2, size: 3, aoe: 1.5, lifetime: 1, damage: "pain", playerEffect: {name: "TrapSPCloud", damage: "pain", power: 5.0 }},
 	{nonmagical: true, enemySpell: true, name: "SleepDart", sfx: "Miss", manacost: 1, components: [], level:1, type:"bolt", projectileTargeting:true, onhit:"", power: 4, time: 0, delay: 0, range: 50, damage: "pain", speed: 1, playerEffect: {name: "TrapSleepDart", power: 5}},
 ];
 
@@ -1537,12 +1953,31 @@ let KinkyDungeonSpellListEnemies = [
 
 /** @type {Record<string, KDBondage>} */
 let KDSpecialBondage = {
+	"Energy": {
+		priority: 25,
+		color: "#ffff00",
+		struggleRate: 0.7,
+		powerStruggleBoost: 0.3,
+		healthStruggleBoost: 1.5,
+		mageStruggleBoost: 1.5,
+		enemyBondageMult: 1.0,
+	},
+	"Magic": {
+		priority: -5,
+		color: "#92e8c0",
+		struggleRate: 0.6,
+		powerStruggleBoost: 1.0,
+		healthStruggleBoost: 1.0,
+		mageStruggleBoost: 1.75,
+		enemyBondageMult: 0.8,
+	},
 	"Leather": {
 		priority: 0,
 		color: "#ad2f45",
 		struggleRate: 1.0,
 		powerStruggleBoost: 1.0,
 		healthStruggleBoost: 1.0,
+		enemyBondageMult: 1.0,
 	},
 	"Rope": {
 		priority: -3,
@@ -1550,6 +1985,7 @@ let KDSpecialBondage = {
 		struggleRate: 2.0,
 		powerStruggleBoost: 1.0,
 		healthStruggleBoost: 1.0,
+		enemyBondageMult: 2.0,
 	},
 	"Metal": {
 		priority: 10,
@@ -1557,6 +1993,7 @@ let KDSpecialBondage = {
 		struggleRate: 0.5,
 		powerStruggleBoost: 0.25,
 		healthStruggleBoost: 1.5,
+		enemyBondageMult: 0.6,
 	},
 	"Slime": {
 		priority: -10,
@@ -1564,6 +2001,7 @@ let KDSpecialBondage = {
 		struggleRate: 1.5,
 		powerStruggleBoost: 2.0,
 		healthStruggleBoost: 0.75,
+		enemyBondageMult: 1.75,
 	},
 	"Tape": {
 		priority: -5,
@@ -1571,6 +2009,7 @@ let KDSpecialBondage = {
 		struggleRate: 1.35,
 		powerStruggleBoost: 0.75,
 		healthStruggleBoost: 1.5,
+		enemyBondageMult: 1.5,
 	},
 	"Vine": {
 		priority: -7,
@@ -1578,6 +2017,7 @@ let KDSpecialBondage = {
 		struggleRate: 1.25,
 		powerStruggleBoost: 2.0,
 		healthStruggleBoost: 1.0,
+		enemyBondageMult: 1.5,
 	},
 	"Ice": {
 		priority: -15,
@@ -1585,6 +2025,7 @@ let KDSpecialBondage = {
 		struggleRate: 0.6,
 		powerStruggleBoost: 3.0,
 		healthStruggleBoost: 0.7,
+		enemyBondageMult: 0.5,
 	},
 };
 
@@ -1598,6 +2039,10 @@ let KDMagicDefs = {
 	SarcoKraken_TentacleCountMin: 1,
 	SarcoKraken_TentacleCountMax: 3,
 	SarcoKraken_TentacleCountShare: 0.2, //1 tentacle max per this much hp
+	SlimeKraken_TentacleCost:0.08,
+	SlimeKraken_TentacleThreshold: 0.1,
+	SlimeKraken_TentacleCountMin: 4,
+	SlimeKraken_TentacleCountShare: 0.1, //1 slime max per this much hp
 };
 
 /** @type {Record<string, (enemy: entity, target: entity, spell?: spell) => boolean>} */
@@ -1632,6 +2077,12 @@ let KDCastConditions = {
 			> KDMagicDefs?.RopeKraken_TentacleCountMin + Math.floor(enemy.hp/enemy.Enemy.maxhp/KDMagicDefs?.RopeKraken_TentacleCountShare)) return false;
 		return true;
 	},
+	"slimeKraken": (enemy, target) => {
+		if (enemy.hp <= KDMagicDefs?.SlimeKraken_TentacleThreshold) return false;
+		if (KDNearbyEnemies(enemy.x, enemy.y, 10).filter((en) => {return en.Enemy?.tags.latexTrap;}).length
+			> KDMagicDefs?.SlimeKraken_TentacleCountMin + Math.floor(enemy.hp/enemy.Enemy.maxhp/KDMagicDefs?.SlimeKraken_TentacleCountShare)) return false;
+		return true;
+	},
 	"sarcoKraken": (enemy, target) => {
 		if (target.player) {
 			if (KinkyDungeonPlayerTags.get("Sarcophagus")) return false;
@@ -1659,5 +2110,32 @@ let KDCastConditions = {
 			return false;
 		}
 		return false;
+	},
+};
+
+/** @type {Record<string, (player: entity, x: number, y: number) => boolean>} */
+let KDPlayerCastConditions = {
+	"hasArcaneEnergy": (player, x, y) => {
+		return KinkyDungeonGetBuffedStat(KinkyDungeonPlayerBuffs, "ArcaneEnergy") > 0;
+	},
+	"noStationaryBullet": (player, x, y) => {
+		return !KDMapData.Bullets.some((b) => {
+			return b.x == x && b.y == y;
+		});
+	},
+};
+
+let KDCustomCost = {
+	"stamina": (data) => {
+		data.cost = KinkyDungeonGetStaminaCost(data.spell) + "sp";
+	},
+	"arcane_blast": (data) => {
+		data.cost = Math.min(KinkyDungeonStatManaMax * 2.5, Math.round(KinkyDungeonGetBuffedStat(KinkyDungeonPlayerEntity, "ArcaneEnergy") * 10)) + "E";
+	},
+	"arcane_akashic": (data) => {
+		data.cost = "100E";
+	},
+	"rhythm": (data) => {
+
 	},
 };

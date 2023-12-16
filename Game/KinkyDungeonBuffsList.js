@@ -57,7 +57,7 @@ let KDSlimed = {
 	]
 };
 let KDEncased = {
-	id: "Encased", type: "SlimeProgress", power: 2.0, player: false, enemies: true, duration: 9999, range: 0.5, replaceSprite: "EncasedDoll", tags: ["encased"], events: [
+	id: "Encased", type: "SlimeProgress", power: 2.0, player: false, enemies: true, duration: 9999, range: 0.5, replaceSpriteBound: "EncasedFactoryDoll", replaceSprite: "EncasedDoll", tags: ["encased"], events: [
 		{type: "RemoveSlimeWalk", duration: 1, trigger: "tick"},
 		{type: "RemoveFree", trigger: "tick"},
 		{type: "ApplySlowed", duration: 1, power: -2.0, trigger: "tick"},
@@ -71,7 +71,7 @@ let KDEncased = {
 	]
 };
 let KDEncasedDoll = {
-	id: "EncasedDoll", type: "SlimeProgress", power: 2.0, player: false, enemies: true, duration: 9999, range: 0.5, replaceSprite: "EncasedFactoryDoll", tags: ["encased"], events: [
+	id: "EncasedDoll", type: "SlimeProgress", power: 2.0, player: false, enemies: true, duration: 9999, range: 0.5, replaceSpriteBound: "EncasedFactoryDoll", replaceSprite: "EncasedFactoryDoll", tags: ["encased"], events: [
 		{type: "RemoveSlimeWalk", duration: 1, trigger: "tick"},
 		{type: "RemoveFree", trigger: "tick"},
 		{type: "ApplySlowed", duration: 1, power: -2.0, trigger: "tick"},
@@ -90,22 +90,28 @@ let KDChastity = {
 	]
 };
 let KDVibrate1 = {
-	id: "Vibrate1", type: "Vibration", power: 1.0, aura: "#ffaaaa", duration: 3, tags: ["plugged"], events: [
+	id: "Vibrate", type: "Vibration", power: 1.0, aura: "#ffaaaa", duration: 3, tags: ["plugged"], events: [
 		{type: "RemoveNoPlug", trigger: "tick"},
 	]
 };
 let KDVibrate2 = {
-	id: "Vibrate2", type: "Vibration", power: 1.0, aura: "#ffaaaa", duration: 3, tags: ["plugged"], events: [
+	id: "Vibrate2", type: "Vibration", power: 2.0, aura: "#ffaaaa", duration: 3, tags: ["plugged"], events: [
 		{type: "RemoveNoPlug", trigger: "tick"},
 	]
 };
 let KDVibrate3 = {
-	id: "Vibrate3", type: "Vibration", power: 1.0, aura: "#ffaaaa", duration: 3, tags: ["plugged"], events: [
+	id: "Vibrate3", type: "Vibration", power: 3.0, aura: "#ffaaaa", duration: 3, tags: ["plugged"], events: [
 		{type: "RemoveNoPlug", trigger: "tick"},
 	]
 };
+let KDToySecret = {
+	id: "Toy", type: "Plug", power: 0.1, duration: 9999, range: 0.5, tags: ["toy"],
+};
 let KDToy = {
-	id: "Toy", type: "Plug", power: 0.1, aura: "#dddddd", aurasprite: "Toy", player: false, enemies: true, duration: 30, range: 0.5, tags: ["toy"]
+	id: "Toy", type: "Plug", power: 0.1, aura: "#dddddd", aurasprite: "Toy", player: false, enemies: true, duration: 30, range: 0.5, tags: ["toy"],
+	events: [
+		{type: "ExtendDisabledOrHelplessOrChastity", trigger: "tick"},
+	]
 };
 let KDPlugged = {
 	id: "Plugged", type: "Plug", power: 1.0, aura: "#dddddd", aurasprite: "Plugged", player: false, enemies: true, duration: 9999, range: 0.5, tags: ["plugged"], events: [
@@ -119,6 +125,15 @@ let KDDoublePlugged = {
 		{type: "RemoveFree", trigger: "tick", prereq: "NoChastity"},
 	]
 };
+
+let KDTaped = {
+	id: "Taped", type: "chainDamageResist", power: -0.15, duration: 1, replaceSpriteBound: "TapedDoll", tags: ["taped"], aura: "#4fa4b8", replacePower: 1.0,
+	events: [
+		{type: "ExtendDisabledOrHelpless", trigger: "tick"},
+		{type: "RemoveAuraHelpless", trigger: "tick"},
+	]
+};
+
 let KDGlueVulnLow = {
 	id: "GlueVuln", type: "glueDamageResist", power: -0.3, player: true, enemies: true, duration: 1
 };
@@ -164,3 +179,39 @@ let KDBuffReference = {
 };
 
 let KDDisenchantSelf = {id: "DisenchantSelf", aura: "#8888ff", type: "Disenchant", power: 9.9, player: true, enemies: true, duration: 10,};
+
+/** @type {Record<string, (entity: entity, buff: any) => void>}>} */
+let KDCustomBuff = {
+};
+
+/**
+ * @type {Record<string, (buff, entity) => void>}}
+ */
+let KDBuffClick = {
+	"SlimeMimic": (buff, entity) => {
+		// Toggle SlimeMimic on/off
+		let b = KinkyDungeonPlayerBuffs.d_SlimeMimic;
+		if (b && b.duration > 0) {
+			b.duration = 0;
+		} else {
+			KinkyDungeonApplyBuffToEntity(entity,
+				{id: "d_SlimeMimic", click: "SlimeMimic", type: "d_SlimeMimic", aura: "#ffffff", aurasprite: "Null", duration: 9999, power: 1}
+			);
+		}
+	},
+	"OrgasmResist": (buff, entity) => {
+		// Toggle SlimeMimic on/off
+		let b = KinkyDungeonPlayerBuffs.d_OrgasmResist;
+		if (b && b.duration > 0) {
+			b.duration = 0;
+			KinkyDungeonApplyBuffToEntity(entity,
+				{id: "e_OrgasmResist", click: "OrgasmResist", type: "e_OrgasmResist", buffSprite: true, aura: "#ffffff", aurasprite: "Null", duration: 9999, power: 1}
+			);
+		} else {
+			KinkyDungeonApplyBuffToEntity(entity,
+				{id: "d_OrgasmResist", click: "OrgasmResist", type: "d_OrgasmResist", buffSprite: true, aura: "#ffffff", aurasprite: "Null", duration: 9999, power: 1}
+			);
+			if (KinkyDungeonPlayerBuffs.e_OrgasmResist) KinkyDungeonPlayerBuffs.e_OrgasmResist.duration = 0;
+		}
+	},
+};

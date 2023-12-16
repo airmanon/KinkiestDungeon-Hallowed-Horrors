@@ -25,17 +25,23 @@ function KDAddParticle(x, y, img, type, data) {
 			zIndex: data.zIndex || 100,
 			vy: data.vy + (data.vy_spread ? (Math.random()*data.vy_spread - data.vy_spread*0.5) : 0),
 			vx: data.vx + (data.vx_spread ? (Math.random()*data.vx_spread - data.vx_spread*0.5) : 0),
+			scale: data.scale || 1,
+			scale_delta: data.scale_delta || 0,
 			sin_y: data.sin_y + (data.sin_y_spread ? (Math.random()*data.sin_y_spread - data.sin_y_spread*0.5) : 0),
 			sin_x: data.sin_x + (data.sin_x_spread ? (Math.random()*data.sin_x_spread - data.sin_x_spread*0.5) : 0),
 			sin_period: data.sin_period + (data.sin_period_spread ? (Math.random()*data.sin_period_spread - data.sin_period_spread*0.5) : 0),
 			phase: data.phase || 0,
 		});
 		// Create the sprite
-		// @ts-ignore
 		let sprite = PIXI.Sprite.from(tex);
 		sprite.position.x = x;
 		sprite.position.y = y;
 		sprite.zIndex = info.zIndex;
+
+		if (info.scale != 1 || info.scale_delta) {
+			sprite.scale.x = info.scale;
+			sprite.scale.y = info.scale;
+		}
 
 		if (info.fadeEase) {
 			switch (info.fadeEase) {
@@ -62,6 +68,15 @@ function KDUpdateParticles(delta) {
 		info = particle[1].info;
 		sprite = particle[1].sprite;
 
+		if (info.camX != undefined && KinkyDungeonCamXVis != info.camX) {
+			sprite.position.x -= (KinkyDungeonCamXVis - info.camX) * KinkyDungeonGridSizeDisplay;
+			info.camX = KinkyDungeonCamXVis;
+		}
+		if (info.camY != undefined && KinkyDungeonCamYVis != info.camY) {
+			sprite.position.y -= (KinkyDungeonCamYVis - info.camY) * KinkyDungeonGridSizeDisplay;
+			info.camY = KinkyDungeonCamYVis;
+		}
+
 		sprite.anchor.set(0.5);
 
 		if (info.rotation && !sprite.rotation) sprite.rotation = info.rotation;
@@ -76,6 +91,12 @@ function KDUpdateParticles(delta) {
 			switch (info.fadeEase) {
 				case "invcos": {sprite.alpha = Math.min(1, Math.max(0, 1 - Math.cos(2 * Math.PI * info.time / info.lifetime)));}
 			}
+		}
+
+		if (info.scale != 1 || info.scale_delta) {
+			sprite.scale.x = info.scale;
+			sprite.scale.y = info.scale;
+			info.scale += delta * info.scale_delta;
 		}
 
 		info.time += delta;
@@ -117,11 +138,37 @@ function KDDrawArousalParticles(pinkChance, density, purpleChance) {
 function KDDrawVibeParticles(density) {
 
 	let arousalRate = 100 / density;
-	if (KinkyDungeonVibeLevel > 0 && CommonTime() > lastVibeParticle + 0.03 * arousalRate * (2/(2 + KinkyDungeonVibeLevel))) {
+	if (StandalonePatched) arousalRate *= 2;
+	if (KinkyDungeonVibeLevel > 0 && CommonTime() > lastVibeParticle + 0.03 * arousalRate * (3/(3 + KinkyDungeonVibeLevel))) {
 		KDCreateVibeParticle();
 
 		lastVibeParticle = CommonTime();
 	}
+}
+
+function KDAddShockwave(x, y, size, spr = `Particles/Shockwave.png`, attachToCamera = true) {
+	let lifetime = 700 + size;
+	let data = {
+		time: 0,
+		lifetime: lifetime,
+		vx: 0,
+		vy: 0,
+		zIndex: 10,
+		phase: 0,
+		scale: 0.001,
+		scale_delta: size / 512 / lifetime,
+		fadeEase: "invcos",
+		rotation: 0,
+	};
+	if (attachToCamera) {
+		data.camX = KinkyDungeonCamX;
+		data.camY = KinkyDungeonCamY;
+	}
+	KDAddParticle(
+		x,
+		y,
+		KinkyDungeonRootDirectory + spr,
+		undefined, data);
 }
 
 /**
@@ -129,19 +176,42 @@ function KDDrawVibeParticles(density) {
  */
 function KDCreateVibeParticle() {
 	let lifetime = 500 + Math.random() * 250;
-	let x = 250;
-	let y = 520 + (KinkyDungeonPlayer.Pose.includes("Hogtied") ? 165 : (KinkyDungeonPlayer.IsKneeling() ? 78 : 0));
+	let x = 250 - (StandalonePatched ? 5 : 0);
+	let Hogtied = KDIsHogtied(KinkyDungeonPlayer);
+	let Kneeling = KDIsKneeling(KinkyDungeonPlayer);
+	let y = 520 + (Hogtied ? 165 : (Kneeling ? 78 : 0));
+	if (StandalonePatched) {
+		// Throw out in favor of new system
+		let pos = GetHardpointLoc(KinkyDungeonPlayer, 0, 0, 1, "Front");
+		x = pos.x;
+		y = pos.y;
+	}
+
 	let locations = KDSumVibeLocations();
-	let vx = ((Math.random() > 0.5) ? -1 : 1) * 0.25;
+	let vx = ((Math.random() > 0.5) ? -1 : 1) * (0.1 + Math.random()*0.15);
 	let vy = -.15 + Math.random() * .3;
 	let breast = locations.includes("ItemBreast") || locations.includes("ItemNipples");
 	let cli = (locations.includes("ItemVulvaPiercings") || locations.includes("ItemPelvis"));
+	let forceSide = 0;
 	if (breast || cli) {
 		if (cli && (locations.length == 1 || Math.random() < 0.25)) {
 			vy = 0.25 + Math.random()*0.1;
 			vx = -.05 + Math.random() * .1;
 		}
-		else if (breast && !KinkyDungeonPlayer.Pose.includes("Hogtied") && (locations.length == 1 || Math.random() < 0.5)) y -= 155;
+		else if (breast && !Hogtied && (locations.length == 1 || Math.random() < 0.5)) {
+			if (StandalonePatched) {
+				if (Math.random() > 0.5) forceSide = 1;
+				else forceSide = -1;
+				let pos = forceSide > 0 ? GetHardpointLoc(KinkyDungeonPlayer, 0, 0, 1, "BreastRight") : GetHardpointLoc(KinkyDungeonPlayer, 0, 0, 1, "BreastLeft");
+				x = pos.x;
+				y = pos.y;
+				vx = ((Math.random() > 0.5) ? -1 : 1) * (0.05 + Math.random()*0.12);
+				vy = -.1 + Math.random() * .3;
+				if ((forceSide > 0 && vx < 0) || (forceSide < 0 && vx > 0)) vx *= -1;
+			} else {
+				y -= 155;
+			}
+		}
 
 	}
 

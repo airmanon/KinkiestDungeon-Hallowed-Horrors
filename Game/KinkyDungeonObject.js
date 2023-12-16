@@ -18,7 +18,7 @@ let KDObjectMessages = {
 let KDObjectClick = {
 	"Food": (x, y) => {
 		let tile = KinkyDungeonTilesGet(x + "," + y);
-		if (tile.Food && !tile.Eaten) {
+		if (tile.Food && KDFood[tile.Food] && !KDFood[tile.Food].inedible && !tile.Eaten) {
 			KinkyDungeonTargetTileLocation = x + "," + y;
 			KinkyDungeonTargetTile = tile;
 			KDStartDialog("TableFood", "", true, "");
@@ -162,9 +162,9 @@ function KinkyDungeonGhostMessage() {
 		} else {
 			let BoundType = "Generic";
 			if (!KinkyDungeonCanTalk() && Math.random() < 0.33) BoundType = "Gag";
-			if (!KinkyDungeonPlayer.CanInteract() && Math.random() < 0.33) BoundType = "Arms";
-			if (!KinkyDungeonPlayer.CanWalk() && Math.random() < 0.33) BoundType = "Feet";
-			if (KinkyDungeonPlayer.IsChaste() && Math.random() < 0.33) BoundType = "Chaste";
+			if ((KinkyDungeonIsHandsBound() || KinkyDungeonIsArmsBound()) && Math.random() < 0.33) BoundType = "Arms";
+			if (KinkyDungeonSlowLevel > 0 && Math.random() < 0.33) BoundType = "Feet";
+			if (KinkyDungeonChastityMult() > 0 && Math.random() < 0.33) BoundType = "Chaste";
 
 			msg = TextGet("KinkyDungeonGhostUnhelpful" + BoundType + KinkyDungeonTargetTile.GhostDecision);
 		}
@@ -200,7 +200,7 @@ function KinkyDungeonFoodMessage(Tile) {
 }
 
 function KinkyDungeonMakeGhostDecision() {
-	for (let tile of Object.values(KinkyDungeonTiles)) {
+	for (let tile of Object.values(KDMapData.Tiles)) {
 		if (tile.Type == "Ghost") {
 			tile.GhostDecision = 0;
 
